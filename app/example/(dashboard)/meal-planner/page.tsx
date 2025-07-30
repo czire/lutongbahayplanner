@@ -1,6 +1,6 @@
 "use client";
 
-import LogoutButton from "@/components/ui/session-buttons/logout-button";
+import LogoutButton from "@/components/ui/session-buttons/LogoutButton";
 import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
 
 const Page = () => {
