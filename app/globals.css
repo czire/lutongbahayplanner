@@ -1,26 +1,179 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0.625rem;
+  /* Warm cream background - like rice or coconut milk */
+  --background: oklch(96.714% 0.02194 80.643);
+  --foreground: oklch(0.25 0.02 85);
+
+  /* Card colors - slightly warmer white */
+  --card: oklch(0.995 0.005 85);
+  --card-foreground: oklch(0.25 0.02 85);
+
+  /* Popover colors */
+  --popover: oklch(0.995 0.005 85);
+  --popover-foreground: oklch(0.25 0.02 85);
+
+  /* Primary - warm terracotta/clay pot orange */
+  --primary: oklch(0.55 0.15 45);
+  --primary-foreground: oklch(0.98 0.01 85);
+
+  /* Secondary - soft sage green like fresh herbs */
+  --secondary: oklch(0.85 0.05 150);
+  --secondary-foreground: oklch(0.35 0.08 150);
+
+  /* Muted - warm neutral like bamboo */
+  --muted: oklch(0.92 0.02 75);
+  --muted-foreground: oklch(0.5 0.03 75);
+
+  /* Accent - golden yellow like turmeric */
+  --accent: oklch(0.88 0.08 85);
+  --accent-foreground: oklch(0.3 0.05 85);
+
+  /* Destructive - chili red */
+  --destructive: oklch(0.6 0.2 15);
+
+  /* Borders and inputs - warm beige */
+  --border: oklch(0.88 0.02 75);
+  --input: oklch(0.92 0.02 75);
+  --ring: oklch(0.55 0.15 45);
+
+  /* Chart colors - Filipino cuisine inspired */
+  --chart-1: oklch(0.6 0.18 35); /* Adobo brown */
+  --chart-2: oklch(0.7 0.15 140); /* Fresh vegetables green */
+  --chart-3: oklch(0.75 0.12 85); /* Golden rice */
+  --chart-4: oklch(0.65 0.2 15); /* Tomato red */
+  --chart-5: oklch(0.5 0.1 270); /* Purple ube */
+
+  /* Sidebar - warm cream */
+  --sidebar: oklch(0.96 0.01 85);
+  --sidebar-foreground: oklch(0.3 0.03 85);
+  --sidebar-primary: oklch(0.55 0.15 45);
+  --sidebar-primary-foreground: oklch(0.98 0.01 85);
+  --sidebar-accent: oklch(0.88 0.08 85);
+  --sidebar-accent-foreground: oklch(0.3 0.05 85);
+  --sidebar-border: oklch(0.88 0.02 75);
+  --sidebar-ring: oklch(0.55 0.15 45);
+}
+
+.dark {
+  /* Dark mode - warm dark brown like adobo sauce */
+  --background: oklch(0.15 0.02 45);
+  --foreground: oklch(0.95 0.01 85);
+
+  /* Card - slightly lighter warm brown */
+  --card: oklch(0.18 0.03 45);
+  --card-foreground: oklch(0.95 0.01 85);
+
+  /* Popover */
+  --popover: oklch(0.18 0.03 45);
+  --popover-foreground: oklch(0.95 0.01 85);
+
+  /* Primary - bright terracotta for dark mode */
+  --primary: oklch(0.7 0.18 45);
+  --primary-foreground: oklch(0.15 0.02 45);
+
+  /* Secondary - muted sage green */
+  --secondary: oklch(0.25 0.05 150);
+  --secondary-foreground: oklch(0.85 0.05 150);
+
+  /* Muted - dark warm brown */
+  --muted: oklch(0.22 0.03 45);
+  --muted-foreground: oklch(0.7 0.02 75);
+
+  /* Accent - warm golden yellow */
+  --accent: oklch(0.35 0.08 85);
+  --accent-foreground: oklch(0.95 0.01 85);
+
+  /* Destructive - bright chili red */
+  --destructive: oklch(0.7 0.22 15);
+
+  /* Borders and inputs */
+  --border: oklch(0.25 0.03 45);
+  --input: oklch(0.22 0.03 45);
+  --ring: oklch(0.7 0.18 45);
+
+  /* Chart colors for dark mode */
+  --chart-1: oklch(0.7 0.2 35); /* Lighter adobo brown */
+  --chart-2: oklch(0.6 0.18 140); /* Bright vegetable green */
+  --chart-3: oklch(0.8 0.15 85); /* Bright golden rice */
+  --chart-4: oklch(0.75 0.22 15); /* Bright tomato red */
+  --chart-5: oklch(0.65 0.15 270); /* Bright purple ube */
+
+  /* Sidebar for dark mode */
+  --sidebar: oklch(0.12 0.02 45);
+  --sidebar-foreground: oklch(0.9 0.01 85);
+  --sidebar-primary: oklch(0.7 0.18 45);
+  --sidebar-primary-foreground: oklch(0.15 0.02 45);
+  --sidebar-accent: oklch(0.35 0.08 85);
+  --sidebar-accent-foreground: oklch(0.95 0.01 85);
+  --sidebar-border: oklch(0.25 0.03 45);
+  --sidebar-ring: oklch(0.7 0.18 45);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html,
+  body,
+  #__next {
+    @apply h-full;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  .bt {
+    @apply border border-red-500;
+  }
 }
