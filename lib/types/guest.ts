@@ -35,7 +35,18 @@ export interface GuestRecipeIngredient {
   name: string;
   quantity: string;
   unit: string;
+  price: number; // Required for calculations
+  pricePerUnit?: number | null;
+  notes?: string | null;
   recipeId: string;
+}
+
+export interface GuestIngredient {
+  id: string;
+  name: string; // Global ingredient reference
+  pricePerUnit?: number; // Price per unit for this ingredient
+  unit?: string; // e.g., grams, liters, etc.
+  createdAt: string; // ISO date string
 }
 
 export interface GuestUserIngredient {

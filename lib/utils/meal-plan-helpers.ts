@@ -22,6 +22,9 @@ interface DatabaseRecipe {
     name: string;
     quantity: string;
     unit: string;
+    price?: number; // Optional until migration is run
+    pricePerUnit?: number | null; // Optional until migration is run
+    notes?: string | null; // Optional until migration is run
     recipeId: string;
   }>;
 }
@@ -105,6 +108,9 @@ export const transformToGuestRecipe = (recipe: DatabaseRecipe): GuestRecipe => {
         name: ingredient.name,
         quantity: ingredient.quantity,
         unit: ingredient.unit,
+        price: ingredient.price ?? 0, // Default to 0 if price not set
+        pricePerUnit: ingredient.pricePerUnit,
+        notes: ingredient.notes,
         recipeId: ingredient.recipeId,
       })) || [],
   };

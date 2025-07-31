@@ -58,12 +58,26 @@ async function createRecipes() {
 
     // Add ingredients to recipe
     for (const ingredient of recipeData.ingredients) {
+      // Find or create the global ingredient
+      let globalIngredient = await prisma.ingredient.findFirst({
+        where: { name: ingredient.name },
+      });
+
+      if (!globalIngredient) {
+        globalIngredient = await prisma.ingredient.create({
+          data: { name: ingredient.name },
+        });
+      }
+
       await prisma.recipeIngredient.create({
         data: {
           recipeId: recipe.id,
           name: ingredient.name,
           quantity: ingredient.quantity,
           unit: ingredient.unit,
+          price: ingredient.price,
+          pricePerUnit: ingredient.pricePerUnit || null,
+          notes: ingredient.notes || null,
         },
       });
     }
