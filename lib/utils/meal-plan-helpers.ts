@@ -179,3 +179,107 @@ export const createErrorMealPlan = (budget: number) => {
     createdAt: new Date().toISOString(),
   };
 };
+
+/**
+ * Calculate total cost of ingredients for a recipe
+ */
+export const calculateRecipeTotalCost = (recipe: DatabaseRecipe): number => {
+  return (
+    recipe.ingredients?.reduce(
+      (sum, ingredient) => sum + (ingredient.price || 0),
+      0
+    ) || 0
+  );
+};
+
+/**
+ * Select recipes that fit within the budget (each meal individually)
+ */
+export const selectRecipesWithinBudget = (
+  recipes: DatabaseRecipe[],
+  budget: number
+): {
+  breakfastRecipe: DatabaseRecipe | undefined;
+  lunchRecipe: DatabaseRecipe | undefined;
+  dinnerRecipe: DatabaseRecipe | undefined;
+} => {
+  // If no recipes, return undefined for all meals
+  if (recipes.length === 0) {
+    return {
+      breakfastRecipe: undefined,
+      lunchRecipe: undefined,
+      dinnerRecipe: undefined,
+    };
+  }
+
+  // Filter recipes that fit within the individual meal budget
+  const recipesWithinBudget = recipes.filter((recipe) => {
+    const recipeCost = calculateRecipeTotalCost(recipe);
+    return recipeCost <= budget;
+  });
+
+  if (recipesWithinBudget.length === 0) {
+    console.log(`No recipes found within budget of ₱${budget.toFixed(2)}`);
+    return {
+      breakfastRecipe: undefined,
+      lunchRecipe: undefined,
+      dinnerRecipe: undefined,
+    };
+  }
+
+  // Select random unique recipes for each meal type
+  const breakfastRecipe =
+    recipesWithinBudget.length > 0
+      ? recipesWithinBudget[
+          generateRandomNumber(0, recipesWithinBudget.length - 1)
+        ]
+      : undefined;
+
+  // Filter out breakfast recipe from lunch options
+  const availableLunchRecipes = recipesWithinBudget.filter(
+    (recipe) => recipe.id !== breakfastRecipe?.id
+  );
+  const lunchRecipe =
+    availableLunchRecipes.length > 0
+      ? availableLunchRecipes[
+          generateRandomNumber(0, availableLunchRecipes.length - 1)
+        ]
+      : recipesWithinBudget.length > 0
+      ? recipesWithinBudget[0]
+      : undefined;
+
+  // Filter out both breakfast and lunch from dinner options
+  const availableDinnerRecipes = recipesWithinBudget.filter(
+    (recipe) =>
+      recipe.id !== breakfastRecipe?.id && recipe.id !== lunchRecipe?.id
+  );
+  const dinnerRecipe =
+    availableDinnerRecipes.length > 0
+      ? availableDinnerRecipes[
+          generateRandomNumber(0, availableDinnerRecipes.length - 1)
+        ]
+      : recipesWithinBudget.length > 0
+      ? recipesWithinBudget[0]
+      : undefined;
+
+  console.log("Selected recipes within individual budget:", {
+    breakfast: `${breakfastRecipe?.name} - ₱${
+      breakfastRecipe
+        ? calculateRecipeTotalCost(breakfastRecipe).toFixed(2)
+        : "0"
+    }`,
+    lunch: `${lunchRecipe?.name} - ₱${
+      lunchRecipe ? calculateRecipeTotalCost(lunchRecipe).toFixed(2) : "0"
+    }`,
+    dinner: `${dinnerRecipe?.name} - ₱${
+      dinnerRecipe ? calculateRecipeTotalCost(dinnerRecipe).toFixed(2) : "0"
+    }`,
+    budget: `₱${budget.toFixed(2)} per meal`,
+  });
+
+  return {
+    breakfastRecipe,
+    lunchRecipe,
+    dinnerRecipe,
+  };
+};

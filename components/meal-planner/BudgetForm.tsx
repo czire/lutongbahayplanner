@@ -37,10 +37,10 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
     <Card className="max-w-md mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
       <CardHeader className="text-center pb-4">
         <CardTitle className="text-2xl font-semibold text-gray-800">
-          💰 Set Your Budget
+          💰 Set Your Budget Per Meal
         </CardTitle>
         <CardDescription className="text-gray-600">
-          Enter your today's food budget to get meal suggestions
+          Enter your budget per meal to get meal suggestions
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -3,8 +3,7 @@
 import { prisma } from "@/prisma";
 import type { GuestMealPlan } from "@/lib/types/guest";
 import {
-  filterRecipesByMealType,
-  selectUniqueRecipes,
+  selectRecipesWithinBudget,
   generateGuestMeals,
   createEmptyMealPlan,
   createErrorMealPlan,
@@ -14,16 +13,11 @@ export const generateGuestMealPlan = async (
   budget: number
 ): Promise<GuestMealPlan> => {
   try {
-    // Get recipes that fit within budget
+    // Get all available recipes with ingredients
     const recipes = await prisma.recipe.findMany({
       include: {
         meals: true,
         ingredients: true,
-      },
-      where: {
-        costPerServing: {
-          lte: budget,
-        },
       },
     });
 
@@ -32,17 +26,9 @@ export const generateGuestMealPlan = async (
       return createEmptyMealPlan(budget);
     }
 
-    // Filter recipes by meal type
-    const breakfastRecipes = filterRecipesByMealType(recipes, "BREAKFAST");
-    const lunchRecipes = filterRecipesByMealType(recipes, "LUNCH");
-    const dinnerRecipes = filterRecipesByMealType(recipes, "DINNER");
-
-    // Select unique recipes for each meal type
-    const { breakfastRecipe, lunchRecipe, dinnerRecipe } = selectUniqueRecipes(
-      breakfastRecipes,
-      lunchRecipes,
-      dinnerRecipes
-    );
+    // Select recipes that fit within the total budget
+    const { breakfastRecipe, lunchRecipe, dinnerRecipe } =
+      selectRecipesWithinBudget(recipes, budget);
 
     console.log("Selected Recipes:", {
       breakfast: breakfastRecipe?.name,
