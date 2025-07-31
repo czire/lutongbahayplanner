@@ -14,6 +14,7 @@ interface DebouncedLinkProps extends VariantProps<typeof buttonVariants> {
   className?: string;
   debounceMs?: number;
   hoverStyle?: "navigation" | "action" | "brand" | "secondary" | "none";
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>; // Add this
 }
 
 export default function DebouncedLink({
@@ -24,6 +25,7 @@ export default function DebouncedLink({
   size,
   debounceMs = 600,
   hoverStyle = "navigation",
+  onClick, // Add this
 }: DebouncedLinkProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,11 +41,18 @@ export default function DebouncedLink({
   );
 
   const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+
+      // Execute custom onClick first (if provided)
+      if (onClick) {
+        await onClick(e);
+      }
+
+      // Then navigate
       debouncedNavigate(href);
     },
-    [href, debouncedNavigate]
+    [href, debouncedNavigate, onClick]
   );
 
   return (

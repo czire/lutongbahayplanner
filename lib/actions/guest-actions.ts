@@ -1,0 +1,76 @@
+"use server";
+
+import { prisma } from "@/prisma";
+import type { GuestMealPlan } from "@/lib/types/guest";
+import {
+  filterRecipesByMealType,
+  selectUniqueRecipes,
+  generateGuestMeals,
+  createEmptyMealPlan,
+  createErrorMealPlan,
+} from "@/lib/utils/meal-plan-helpers";
+
+export const generateGuestMealPlan = async (
+  budget: number
+): Promise<GuestMealPlan> => {
+  try {
+    // Get recipes that fit within budget
+    const recipes = await prisma.recipe.findMany({
+      include: {
+        meals: true,
+        ingredients: true,
+      },
+      where: {
+        costPerServing: {
+          lte: budget,
+        },
+      },
+    });
+
+    // Return empty meal plan if no recipes found
+    if (recipes.length === 0) {
+      return createEmptyMealPlan(budget);
+    }
+
+    // Filter recipes by meal type
+    const breakfastRecipes = filterRecipesByMealType(recipes, "BREAKFAST");
+    const lunchRecipes = filterRecipesByMealType(recipes, "LUNCH");
+    const dinnerRecipes = filterRecipesByMealType(recipes, "DINNER");
+
+    // Select unique recipes for each meal type
+    const { breakfastRecipe, lunchRecipe, dinnerRecipe } = selectUniqueRecipes(
+      breakfastRecipes,
+      lunchRecipes,
+      dinnerRecipes
+    );
+
+    console.log("Selected Recipes:", {
+      breakfast: breakfastRecipe?.name,
+      lunch: lunchRecipe?.name,
+      dinner: dinnerRecipe?.name,
+    });
+
+    // Generate meal plan
+    const mealPlanId = `mealplan_${Date.now()}_guest`;
+    const startDate = new Date();
+    const guestMeals = generateGuestMeals(
+      breakfastRecipe,
+      lunchRecipe,
+      dinnerRecipe,
+      mealPlanId,
+      startDate
+    );
+
+    return {
+      id: mealPlanId,
+      startDate: startDate.toISOString(),
+      endDate: startDate.toISOString(), // Same day for guests
+      budget: budget,
+      meals: guestMeals,
+      createdAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Error generating meal plan:", error);
+    return createErrorMealPlan(budget);
+  }
+};
