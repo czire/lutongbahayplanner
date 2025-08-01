@@ -6,9 +6,12 @@ import SignInGoogle from "@/components/ui/session-buttons/SigninGoogle";
 import DebouncedLink from "@/components/ui/DebouncedLink";
 import { landingPageData } from "@/lib/data/landing-page";
 import { createGuestSession } from "@/lib/utils/guest-session";
+import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const { hero, features, cta } = landingPageData;
+  const { isGuest } = useGuestOrUser();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-background to-orange-50">
@@ -17,7 +20,12 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 lg:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Hero Content */}
-          <div className="space-y-6 text-center lg:text-left">
+          <div
+            className={cn(
+              "space-y-6 text-center lg:text-left",
+              isGuest ? "col-span-1" : "col-span-2 flex-center flex-col"
+            )}
+          >
             <h1 className="font-bold text-primary leading-tight">
               {hero.title}
             </h1>
@@ -48,44 +56,49 @@ export default function Home() {
           </div>
 
           {/* CTA Section */}
-          <div className="bg-card border border-border rounded-xl p-8 shadow-lg space-y-6">
-            <div className="text-center space-y-4">
-              <h2 className="font-bold text-primary">{cta.title}</h2>
-              <p className="text-muted-foreground">{cta.description}</p>
-            </div>
 
-            <div className="space-y-4">
-              <div className="space-y-3 flex-center flex-col">
-                <SignInGoogle />
-                <SignInFacebook />
+          {isGuest && (
+            <div className="bg-card border border-border rounded-xl p-8 shadow-lg space-y-6">
+              <div className="text-center space-y-4">
+                <h2 className="font-bold text-primary">{cta.title}</h2>
+                <p className="text-muted-foreground">{cta.description}</p>
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
+              <div className="space-y-4">
+                <div className="space-y-3 flex-center flex-col">
+                  <SignInGoogle />
+                  <SignInFacebook />
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or</span>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      Or
+                    </span>
+                  </div>
                 </div>
+
+                <DebouncedLink
+                  href={cta.guestCta.link}
+                  variant="outline"
+                  className="w-full"
+                  hoverStyle="secondary"
+                  onClick={() => {
+                    createGuestSession();
+                  }}
+                >
+                  {cta.guestCta.text}
+                </DebouncedLink>
               </div>
 
-              <DebouncedLink
-                href={cta.guestCta.link}
-                variant="outline"
-                className="w-full"
-                hoverStyle="secondary"
-                onClick={() => {
-                  createGuestSession();
-                }}
-              >
-                {cta.guestCta.text}
-              </DebouncedLink>
+              <p className="text-xs text-center text-muted-foreground">
+                {cta.guestNote}
+              </p>
             </div>
-
-            <p className="text-xs text-center text-muted-foreground">
-              {cta.guestNote}
-            </p>
-          </div>
+          )}
         </div>
       </div>
     </main>

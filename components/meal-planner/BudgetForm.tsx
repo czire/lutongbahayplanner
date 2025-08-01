@@ -21,12 +21,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { budgetSchema, type BudgetFormData } from "@/lib/schemas/budget";
 import { useGuestLimitations } from "@/lib/hooks/useGuestLimitations";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface BudgetFormProps {
   onSubmit: (data: BudgetFormData) => Promise<void>;
 }
 
 export function BudgetForm({ onSubmit }: BudgetFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<BudgetFormData>({
     resolver: zodResolver(budgetSchema),
     defaultValues: {
@@ -35,6 +39,15 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
   });
 
   const { canCreateMealPlan } = useGuestLimitations();
+
+  const handleSubmit = async (data: BudgetFormData) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Card className="max-w-md mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -48,7 +61,10 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-6"
+          >
             <FormField
               control={form.control}
               name="budget"
@@ -79,10 +95,17 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
             <Button
               type="submit"
               size="lg"
-              className="w-full h-12 text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
-              disabled={!canCreateMealPlan}
+              className="w-full h-12 text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all duration-200 hover:scale-[1.02] disabled:hover:scale-100"
+              disabled={!canCreateMealPlan || isSubmitting}
             >
-              Generate Meal Plan
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                "Generate Meal Plan"
+              )}
             </Button>
           </form>
         </Form>

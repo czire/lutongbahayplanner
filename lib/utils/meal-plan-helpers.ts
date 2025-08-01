@@ -1,5 +1,5 @@
 import type { GuestMeal, GuestRecipe } from "@/lib/types/guest";
-import { generateRandomNumber } from "./generateRandomNumber";
+import { generateRandomNumber } from "./random-number";
 
 interface DatabaseRecipe {
   id: string;

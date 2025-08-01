@@ -11,7 +11,7 @@ import {
   useGuestMealPlans,
 } from "@/providers/GuestSessionProvider";
 import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
-import { ArrowRight, MoveLeft } from "lucide-react";
+import { ArrowRight, MoveLeft, Loader2 } from "lucide-react";
 
 /**
  * Extracts and filters recipes from the first meal plan
@@ -44,7 +44,7 @@ const Page = () => {
   const { generatedRecipes: generatedGuestRecipes } =
     useGuestGeneratedRecipes();
   const { mealPlans } = useGuestMealPlans();
-  const { isGuest } = useGuestOrUser();
+  const { isGuest, isLoading } = useGuestOrUser();
 
   // Extract recipes using the helper function
   const guestRecipes = extractRecipesFromMealPlan(mealPlans);
@@ -53,6 +53,34 @@ const Page = () => {
   console.log("Guest Generated Recipes:", generatedGuestRecipes);
   console.log("Meal Plans:", mealPlans);
   console.log("Guest Recipes:", guestRecipes);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <DebouncedLink
+              href="/meal-planner"
+              hoverStyle="brand"
+              className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium transition-colors"
+            >
+              <MoveLeft size={20} />
+              Back to Meal Planner
+            </DebouncedLink>
+          </div>
+        </div>
+
+        {/* Loading State */}
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="flex flex-col items-center justify-center h-64 space-y-4">
+            <Loader2 size={32} className="animate-spin text-orange-500" />
+            <p className="text-gray-600">Loading your meal plan...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
