@@ -110,16 +110,29 @@ model Recipe {
 
 model Ingredient {
   id   String @id @default(cuid())
+
   name String @unique // Global ingredient reference
+  pricePerUnit Float? // Price per unit for this ingredient
+  unit String? // e.g., grams, liters, etc.
+
+  createdAt DateTime @default(now())
 }
 
 model RecipeIngredient {
-  id          String     @id @default(cuid())
-  recipe      Recipe     @relation(fields: [recipeId], references: [id])
-  recipeId    String
-  name        String     // e.g., "Tomato"
-  quantity    String
-  unit        String
+  id              String     @id @default(cuid())
+
+  recipe          Recipe     @relation(fields: [recipeId], references: [id])
+  recipeId        String
+
+  name            String
+  quantity        String
+  unit            String
+
+  price           Float
+  pricePerUnit    Float?
+  notes           String?
+
+  createdAt       DateTime @default(now())
 }
 
 model Step {
