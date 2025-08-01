@@ -24,11 +24,12 @@ import {
   removeGuestSavedRecipe,
   isGuestRecipeSaved,
 } from "@/lib/utils/guest-session";
-import type {
-  GuestSessionData,
-  GuestMealPlan,
-  GuestMeal,
-  GuestUserIngredient,
+import {
+  type GuestSessionData,
+  type GuestMealPlan,
+  type GuestMeal,
+  type GuestUserIngredient,
+  GUEST_LIMITATIONS,
 } from "@/lib/types/guest";
 
 interface GuestSessionContextType {
@@ -169,8 +170,36 @@ export function useGuestMealPlans() {
   const createMealPlan = async (
     mealPlan: Omit<GuestMealPlan, "id" | "createdAt">
   ) => {
+    await updateGenerationCount();
+
     const result = addGuestMealPlan(mealPlan);
-    const refreshedSession = await refreshSession();
+    await refreshSession();
+    return result;
+  };
+
+  const updateGenerationCount = async () => {
+    if (!guestSession) return;
+
+    const today = new Date().toDateString();
+    const lastGenDate = guestSession.limitations?.lastGenerationDate
+      ? new Date(guestSession.limitations.lastGenerationDate).toDateString()
+      : null;
+    const isNewDay = !lastGenDate || lastGenDate !== today;
+
+    const currentGenerations = isNewDay
+      ? 0
+      : guestSession.limitations?.generationsToday || 0;
+
+    await updateGuestSession({
+      limitations: {
+        generationsToday: currentGenerations + 1,
+        lastGenerationDate: new Date().toISOString(),
+        maxGenerationsPerDay: GUEST_LIMITATIONS.MAX_GENERATIONS_PER_DAY,
+        sessionStartTime:
+          guestSession.limitations?.sessionStartTime ||
+          new Date().toISOString(),
+      },
+    });
   };
 
   const updateMealPlan = async (

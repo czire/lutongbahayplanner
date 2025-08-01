@@ -75,6 +75,14 @@ export interface GuestSessionData {
   // Saved/favorited recipes (recipe IDs)
   savedRecipes: string[];
 
+  // Guest limitations tracking
+  limitations: {
+    generationsToday: number;
+    lastGenerationDate: string;
+    maxGenerationsPerDay: number;
+    sessionStartTime: string;
+  };
+
   // Additional guest-specific data for enhanced UX
   preferences?: {
     dietaryRestrictions?: string[];
@@ -83,3 +91,8 @@ export interface GuestSessionData {
     defaultBudget?: number;
   };
 }
+
+export const GUEST_LIMITATIONS = {
+  MAX_GENERATIONS_PER_DAY: 3,
+  SESSION_DURATION_HOURS: 24, // Session duration in hours
+} as const;

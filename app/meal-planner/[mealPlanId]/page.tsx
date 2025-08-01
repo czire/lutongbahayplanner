@@ -2,6 +2,7 @@
 
 import { Card } from "@/components/ui/card";
 import DebouncedLink from "@/components/ui/DebouncedLink";
+import { GuestBanner } from "@/components/ui/GuestBanner";
 import { RecipeCard } from "@/components/meal-planner/RecipeCard";
 import { CostSummary } from "@/components/meal-planner/CostSummary";
 import { GuestMeal, GuestRecipe, GuestMealPlan } from "@/lib/types/guest";
@@ -9,6 +10,7 @@ import {
   useGuestGeneratedRecipes,
   useGuestMealPlans,
 } from "@/providers/GuestSessionProvider";
+import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
 import { ArrowRight, MoveLeft } from "lucide-react";
 
 /**
@@ -42,6 +44,7 @@ const Page = () => {
   const { generatedRecipes: generatedGuestRecipes } =
     useGuestGeneratedRecipes();
   const { mealPlans } = useGuestMealPlans();
+  const { isGuest } = useGuestOrUser();
 
   // Extract recipes using the helper function
   const guestRecipes = extractRecipesFromMealPlan(mealPlans);
@@ -69,10 +72,15 @@ const Page = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* Guest Banner */}
+        {isGuest && (
+          <GuestBanner className="mb-6" showLimits={false} dismissible={true} />
+        )}
+
         {/* Title Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            🛍️ Grocery List & Meal Details
+            Grocery List & Meal Details
           </h1>
           <div className="flex items-center gap-4">
             {currentMealPlan ? (
@@ -102,6 +110,7 @@ const Page = () => {
                     key={recipe.id}
                     recipe={recipe}
                     recipeCost={recipeCost}
+                    calculateRecipeCost={calculateRecipeCost}
                   />
                 );
               })}

@@ -2,13 +2,30 @@
 
 import { Card } from "@/components/ui/card";
 import { GuestRecipe } from "@/lib/types/guest";
+import { Download } from "lucide-react";
+import { generateRecipeIngredientsPDF } from "@/lib/utils/pdf-export";
 
 interface RecipeCardProps {
   recipe: GuestRecipe;
   recipeCost: number;
+  calculateRecipeCost: (recipe: GuestRecipe) => number;
 }
 
-export const RecipeCard = ({ recipe, recipeCost }: RecipeCardProps) => {
+export const RecipeCard = ({
+  recipe,
+  recipeCost,
+  calculateRecipeCost,
+}: RecipeCardProps) => {
+  // PDF export handler for individual recipe
+  const handleExportIngredientsPDF = () => {
+    try {
+      generateRecipeIngredientsPDF(recipe, calculateRecipeCost);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    }
+  };
+
   return (
     <Card className="overflow-hidden shadow-lg border-0">
       {/* Recipe Header */}
@@ -38,9 +55,18 @@ export const RecipeCard = ({ recipe, recipeCost }: RecipeCardProps) => {
 
       {/* Ingredients Section */}
       <div className="p-6">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          🥬 Ingredients ({recipe.ingredients?.length || 0})
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold flex items-center gap-2">
+            🥬 Ingredients ({recipe.ingredients?.length || 0})
+          </h3>
+          <button
+            onClick={handleExportIngredientsPDF}
+            className="inline-flex items-center gap-2 bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-colors font-medium text-sm shadow-sm"
+          >
+            <Download size={14} />
+            Save Ingredients PDF
+          </button>
+        </div>
 
         {recipe.ingredients && recipe.ingredients.length > 0 ? (
           <div className="grid gap-3">

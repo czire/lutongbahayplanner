@@ -20,6 +20,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { budgetSchema, type BudgetFormData } from "@/lib/schemas/budget";
+import { useGuestLimitations } from "@/lib/hooks/useGuestLimitations";
 
 interface BudgetFormProps {
   onSubmit: (data: BudgetFormData) => Promise<void>;
@@ -32,6 +33,8 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
       budget: 500,
     },
   });
+
+  const { canCreateMealPlan } = useGuestLimitations();
 
   return (
     <Card className="max-w-md mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -77,6 +80,7 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
               type="submit"
               size="lg"
               className="w-full h-12 text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
+              disabled={!canCreateMealPlan}
             >
               Generate Meal Plan
             </Button>

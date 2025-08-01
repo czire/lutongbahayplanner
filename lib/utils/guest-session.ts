@@ -1,9 +1,10 @@
 import Cookies from "js-cookie";
-import type {
-  GuestSessionData,
-  GuestMealPlan,
-  GuestMeal,
-  GuestUserIngredient,
+import {
+  type GuestSessionData,
+  type GuestMealPlan,
+  type GuestMeal,
+  type GuestUserIngredient,
+  GUEST_LIMITATIONS,
 } from "@/lib/types/guest";
 
 export const createGuestSession = (): GuestSessionData => {
@@ -18,6 +19,12 @@ export const createGuestSession = (): GuestSessionData => {
     mealPlans: [],
     userIngredients: [],
     savedRecipes: [],
+    limitations: {
+      maxGenerationsPerDay: GUEST_LIMITATIONS.MAX_GENERATIONS_PER_DAY,
+      sessionStartTime: now,
+      lastGenerationDate: "",
+      generationsToday: 0,
+    },
     preferences: {},
   };
 

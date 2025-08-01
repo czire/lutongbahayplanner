@@ -20,9 +20,17 @@ TECHNICAL SOLUTIONS:
    - Added proper error handling and validation
 
 ✅ UI/UX Improvements - COMPLETED
-   - Modular components: BudgetForm, MealCard, MealPlanDisplay
+   - Modular components: BudgetForm, MealCard, MealPlanDisplay, RecipeCard, CostSummary
    - Enhanced empty states and loading indicators
    - Responsive design and modern Filipino-themed UI
+   - Guest banner component with usage reminders and CTAs
+   - Fixed cost breakdown display for individual meal budgets
+
+✅ Guest Banner System - COMPLETED
+   - GuestBanner component with dismissible functionality
+   - Shows guest limitations and encourages account creation
+   - useGuestDetection hook for session state management
+   - Integrated into meal planner and detail pages
 
 ARCHITECTURE:
 - lib/types/guest.ts - Type definitions
@@ -31,3 +39,10 @@ ARCHITECTURE:
 - lib/utils/meal-plan-helpers.ts - Modular meal plan logic
 - providers/GuestSessionProvider.tsx - React context and hooks
 - components/meal-planner/ - UI components
+
+TODO: 
+- implement guest limit of generating (5 meal plans max)
+- improve grocery list & meal details layout, can be a grid or something, make it smaller
+- add guest session persistence across browser sessions
+- implement guest-to-user migration feature
+- security vulnerability in guest: if limit is reached; user can just delete his session and it'll be reset

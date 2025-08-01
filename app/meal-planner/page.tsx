@@ -1,12 +1,15 @@
 "use client";
 
 import Header from "@/components/Header";
+import { GuestBanner } from "@/components/ui/GuestBanner";
 import { type BudgetFormData } from "@/lib/schemas/budget";
 import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
 import { generateGuestMealPlan } from "@/lib/actions/guest-actions";
 import { useGuestMealPlans } from "@/providers/GuestSessionProvider";
 import { BudgetForm } from "@/components/meal-planner/BudgetForm";
 import { MealPlanDisplay } from "@/components/meal-planner/MealPlanDisplay";
+import { useGuestLimitations } from "@/lib/hooks/useGuestLimitations";
+import { GuestLimitationWarning } from "@/components/meal-planner/GuestLimitationWarning";
 
 const Page = () => {
   const { isGuest, user } = useGuestOrUser();
@@ -15,8 +18,14 @@ const Page = () => {
     createMealPlan,
     deleteMealPlan,
   } = useGuestMealPlans();
+  const { canCreateMealPlan } = useGuestLimitations();
 
   const handleSubmit = async (data: BudgetFormData) => {
+    if (isGuest && !canCreateMealPlan) {
+      alert("You have reached your daily limit for meal plan generations.");
+      return;
+    }
+
     const newGuestMealPlan = await generateGuestMealPlan(data.budget);
 
     // Guests are limited to one meal plan - always replace
@@ -41,16 +50,20 @@ const Page = () => {
       <Header />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="space-y-8">
+          {/* Guest Banner */}
+          {isGuest && (
+            <GuestBanner
+              className="mb-6"
+              showLimits={true}
+              dismissible={true}
+            />
+          )}
+
+          {/* Guest Limitation Warning - ONLY for generations */}
+          {isGuest && <GuestLimitationWarning />}
+
           {/* Hero Section */}
           <div className="text-center space-y-4">
-            <p>
-              {isGuest && (
-                <span className="text-sm text-orange-600">
-                  Reminder: As a guest, you can only generate a limited number
-                  of meal plans.
-                </span>
-              )}
-            </p>
             <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
               🍽️ Meal Planner
             </h1>
