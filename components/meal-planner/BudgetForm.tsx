@@ -23,6 +23,7 @@ import { budgetSchema, type BudgetFormData } from "@/lib/schemas/budget";
 import { useGuestLimitations } from "@/lib/hooks/useGuestLimitations";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
 
 interface BudgetFormProps {
   onSubmit: (data: BudgetFormData) => Promise<void>;
@@ -39,6 +40,7 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
   });
 
   const { canCreateMealPlan } = useGuestLimitations();
+  const { isGuest } = useGuestOrUser();
 
   const handleSubmit = async (data: BudgetFormData) => {
     setIsSubmitting(true);
@@ -53,10 +55,12 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
     <Card className="max-w-md mx-auto shadow-lg border-0 bg-white/80 backdrop-blur-sm">
       <CardHeader className="text-center pb-4">
         <CardTitle className="text-2xl font-semibold text-gray-800">
-          💰 Set Your Budget Per Meal
+          {isGuest ? "💰 Set Your Budget Per Meal" : "💰 Your Daily Budget"}
         </CardTitle>
         <CardDescription className="text-gray-600">
-          Enter your budget per meal to get meal suggestions
+          {isGuest
+            ? "Enter your budget per meal to get meal suggestion for today"
+            : "Enter your daily budget to get meal suggestions for a week"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -71,7 +75,9 @@ export function BudgetForm({ onSubmit }: BudgetFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-medium text-gray-700">
-                    Daily Budget (Philippine Peso)
+                    {isGuest
+                      ? "Budget Per Meal (Philippine Peso)"
+                      : "Daily Budget (Philippine Peso)"}
                   </FormLabel>
                   <FormControl>
                     <div className="relative">

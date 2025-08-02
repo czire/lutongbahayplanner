@@ -94,7 +94,7 @@ export default function Header({
                   <User size={16} />
                   <span>Welcome, {user.name || user.email}</span>
                 </div>
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="sm"
                   className="text-primary-foreground hover:text-primary-foreground/80"
@@ -102,7 +102,7 @@ export default function Header({
                 >
                   <Settings size={16} className="mr-1" />
                   Settings
-                </Button>
+                </Button> */}
                 <LogoutButton
                   variant="outline"
                   size="sm"
@@ -112,9 +112,6 @@ export default function Header({
             ) : isGuest ? (
               // Guest User
               <div className="flex items-center gap-4">
-                <span className="text-sm text-primary-foreground/80 flex items-center gap-1">
-                  👋 Guest Mode
-                </span>
                 {hasRightNav &&
                   effectiveRightNav.map((item) => (
                     <Button

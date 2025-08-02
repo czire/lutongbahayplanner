@@ -22,10 +22,7 @@ const Page = () => {
   const { canCreateMealPlan } = useGuestLimitations();
 
   const handleSubmit = async (data: BudgetFormData) => {
-    if (isGuest && !canCreateMealPlan) {
-      alert("You have reached your daily limit for meal plan generations.");
-      return;
-    }
+    if (isGuest && !canCreateMealPlan) return;
 
     const newGuestMealPlan = await generateGuestMealPlan(data.budget);
 

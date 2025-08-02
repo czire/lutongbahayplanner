@@ -15,7 +15,7 @@ export function HeaderSkeleton({ className = "" }: HeaderSkeletonProps) {
       </div>
 
       {/* Action button skeletons - represents auth/settings buttons */}
-      <Skeleton className="h-8 w-16 bg-primary-foreground/20" />
+      {/* <Skeleton className="h-8 w-16 bg-primary-foreground/20" /> */}
       <Skeleton className="h-8 w-18 bg-primary-foreground/20" />
     </div>
   );

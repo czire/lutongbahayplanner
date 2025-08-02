@@ -1,7 +1,7 @@
+// lib/hooks/useGuestOrUser.ts - Migration compatibility hook
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useGuestSession } from "@/providers/GuestSessionProvider";
+import { useUser } from "@/lib/contexts/UserContext";
 
 type UseGuestOrUserReturnType = {
   user: any; // Replace 'any' with your user type
@@ -14,17 +14,17 @@ type UseGuestOrUserReturnType = {
   status: "loading" | "authenticated" | "unauthenticated";
 };
 
+/**
+ * Legacy compatibility hook for useGuestOrUser
+ * This allows existing components to work without changes during migration
+ * Now powered by the unified UserContext
+ */
 export const useGuestOrUser = (): UseGuestOrUserReturnType => {
-  const { data: session, status } = useSession();
-  const { guestSession, isLoading: guestLoading } = useGuestSession();
-
-  const isAuthenticated = !!session?.user;
-  const isGuest = !isAuthenticated && !!guestSession;
-  const isLoading = status === "loading" || guestLoading;
+  const { user, guestSession, isAuthenticated, isGuest, isLoading } = useUser();
 
   return {
     // User data
-    user: session?.user || null,
+    user,
 
     // Guest data
     guestSession,
@@ -35,7 +35,7 @@ export const useGuestOrUser = (): UseGuestOrUserReturnType => {
     isLoading,
 
     // Combined user identification
-    userId: session?.user?.id || guestSession?.id || null,
+    userId: user?.id || guestSession?.id || null,
     userType: isAuthenticated
       ? "authenticated"
       : isGuest
@@ -43,6 +43,10 @@ export const useGuestOrUser = (): UseGuestOrUserReturnType => {
       : "anonymous",
 
     // Legacy compatibility
-    status,
+    status: isLoading
+      ? "loading"
+      : isAuthenticated
+      ? "authenticated"
+      : "unauthenticated",
   };
 };
