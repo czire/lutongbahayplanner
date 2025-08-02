@@ -2,7 +2,6 @@
 
 import { SessionProvider } from "next-auth/react";
 import { ReactNode } from "react";
-import { GuestSessionProvider } from "./GuestSessionProvider";
 import { UserProvider } from "@/lib/contexts/UserContext";
 
 interface ProvidersProps {
@@ -12,9 +11,7 @@ interface ProvidersProps {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
-      <GuestSessionProvider>
-        <UserProvider>{children}</UserProvider>
-      </GuestSessionProvider>
+      <UserProvider>{children}</UserProvider>
     </SessionProvider>
   );
 }

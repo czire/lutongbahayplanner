@@ -52,7 +52,7 @@ export interface UserIngredient {
 }
 
 export interface CreateUserMealPlanData {
-  budget: number;
+  budget: number; // Daily budget - will be multiplied by number of days for total plan budget
   startDate: string;
   endDate: string;
 }

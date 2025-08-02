@@ -38,19 +38,20 @@ export async function createUserMealPlan(
       throw new Error("No recipes available in the database");
     }
 
-    // Calculate daily budget (weekly budget / 7 days)
+    // Use the inputted budget as daily budget and calculate total budget
     const startDate = new Date(data.startDate);
     const endDate = new Date(data.endDate);
     const daysInPlan =
       Math.ceil(
         (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
       ) || 7;
-    const dailyBudget = data.budget / daysInPlan;
+    const dailyBudget = data.budget; // Input is already daily budget
+    const totalBudget = dailyBudget * daysInPlan;
 
     console.log(
       `Creating ${daysInPlan}-day meal plan with daily budget: ₱${dailyBudget.toFixed(
         2
-      )}`
+      )} (total: ₱${totalBudget.toFixed(2)})`
     );
 
     // Generate meals for each day
@@ -100,7 +101,7 @@ export async function createUserMealPlan(
     const mealPlan = await prisma.mealPlan.create({
       data: {
         userId: session.user.id,
-        budget: data.budget,
+        budget: totalBudget, // Store the total budget for the entire meal plan
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         meals: {

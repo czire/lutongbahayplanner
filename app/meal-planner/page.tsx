@@ -3,44 +3,30 @@
 import Header from "@/components/Header";
 import { GuestBanner } from "@/components/ui/GuestBanner";
 import { type BudgetFormData } from "@/lib/schemas/budget";
-import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
-import { generateGuestMealPlan } from "@/lib/actions/guest-actions";
-import { useGuestMealPlans } from "@/providers/GuestSessionProvider";
+import { useUser } from "@/lib/contexts/UserContext";
 import { BudgetForm } from "@/components/meal-planner/BudgetForm";
 import { MealPlanDisplay } from "@/components/meal-planner/MealPlanDisplay";
-import { useGuestLimitations } from "@/lib/hooks/useGuestLimitations";
 import { GuestLimitationWarning } from "@/components/meal-planner/GuestLimitationWarning";
 import { Loader } from "lucide-react";
 
 const Page = () => {
-  const { isGuest, user, isLoading } = useGuestOrUser();
   const {
-    mealPlans: guestMealPlans,
+    isGuest,
+    user,
+    isLoading,
+    mealPlans,
     createMealPlan,
-    deleteMealPlan,
-  } = useGuestMealPlans();
-  const { canCreateMealPlan } = useGuestLimitations();
+    canCreateMealPlan,
+  } = useUser();
 
   const handleSubmit = async (data: BudgetFormData) => {
     if (isGuest && !canCreateMealPlan) return;
 
-    const newGuestMealPlan = await generateGuestMealPlan(data.budget);
-
-    // Guests are limited to one meal plan - always replace
-    if (guestMealPlans.length > 0) {
-      // Clear all existing plans and create new one
-      for (const plan of guestMealPlans) {
-        await deleteMealPlan(plan.id);
-      }
+    try {
+      await createMealPlan({ budget: data.budget });
+    } catch (error) {
+      console.error("Failed to create meal plan:", error);
     }
-
-    // Create the new meal plan
-    await createMealPlan({
-      startDate: newGuestMealPlan.startDate,
-      endDate: newGuestMealPlan.endDate,
-      budget: newGuestMealPlan.budget,
-      meals: newGuestMealPlan.meals,
-    });
   };
 
   return (
@@ -81,7 +67,7 @@ const Page = () => {
             <BudgetForm onSubmit={handleSubmit} />
 
             {/* Meal Plan Display */}
-            <MealPlanDisplay mealPlans={guestMealPlans} />
+            <MealPlanDisplay mealPlans={mealPlans} />
           </div>
         )}
       </div>

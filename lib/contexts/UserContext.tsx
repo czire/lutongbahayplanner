@@ -9,16 +9,18 @@ import {
   useCallback,
 } from "react";
 import { useSession } from "next-auth/react";
-import {
-  useGuestSession,
-  useGuestMealPlans,
-} from "@/providers/GuestSessionProvider";
-import { useGuestLimitations } from "@/lib/hooks/useGuestLimitations";
+
+// Guest actions and utilities
+import { generateGuestMealPlan } from "@/lib/actions/guest-actions";
 
 // User actions
 import {
+  createUserMealPlan,
   getUserMealPlans,
+  deleteUserMealPlan,
+  addUserIngredient,
   getUserIngredients,
+  deleteUserIngredient,
 } from "@/lib/actions/user-actions";
 
 import type { User } from "next-auth";
@@ -29,6 +31,15 @@ import type {
   CreateUserMealPlanData,
   CreateUserIngredientData,
 } from "@/lib/types/user";
+
+// Guest limitations constants
+const GUEST_LIMITATIONS = {
+  MAX_GENERATIONS_PER_DAY: 3,
+  MAX_MEAL_PLANS: 3,
+};
+
+// Guest session management
+const GUEST_SESSION_KEY = "lutong-bahay-guest-session";
 
 // Unified meal plan type that works for both guests and users
 interface UnifiedMealPlan {
@@ -67,6 +78,9 @@ interface UserContextType {
   generationsUsedToday: number;
   dailyGenerationLimitReached: boolean;
 
+  // Generated recipes (extracted from meal plans)
+  generatedRecipes: any[];
+
   // User ingredients (users only)
   userIngredients: UserIngredient[];
   addUserIngredient?: (
@@ -80,21 +94,83 @@ const UserContext = createContext<UserContextType | null>(null);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
-  const { guestSession, isLoading: guestLoading } = useGuestSession();
+
+  // Guest session state (replacing useGuestSession)
+  const [guestSession, setGuestSession] = useState<GuestSessionData | null>(
+    null
+  );
+  const [isGuestLoading, setIsGuestLoading] = useState(true);
 
   // Determine user state
   const isAuthenticated = !!session?.user;
   const isGuest = !isAuthenticated && !!guestSession;
-  const isLoading = status === "loading" || guestLoading;
-
-  // Guest hooks (existing functionality)
-  const guestMealPlansHook = useGuestMealPlans();
-  const guestLimitations = useGuestLimitations();
+  const isLoading = status === "loading" || isGuestLoading;
 
   // User state
   const [userMealPlans, setUserMealPlans] = useState<UserMealPlan[]>([]);
   const [userIngredients, setUserIngredients] = useState<UserIngredient[]>([]);
   const [isLoadingMealPlans, setIsLoadingMealPlans] = useState(false);
+
+  // Guest session management (replacing GuestSessionProvider functionality)
+  useEffect(() => {
+    const initializeGuestSession = () => {
+      try {
+        const stored = localStorage.getItem(GUEST_SESSION_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setGuestSession(parsed);
+        } else if (!isAuthenticated) {
+          // Create new guest session
+          const newGuestSession: GuestSessionData = {
+            id: `guest_${Date.now()}_${Math.random()
+              .toString(36)
+              .substring(2, 11)}`,
+            role: "guest",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            mealPlans: [],
+            userIngredients: [],
+            savedRecipes: [],
+            preferences: {},
+            limitations: {
+              generationsToday: 0,
+              lastGenerationDate: new Date().toISOString(),
+              maxGenerationsPerDay: GUEST_LIMITATIONS.MAX_GENERATIONS_PER_DAY,
+              sessionStartTime: new Date().toISOString(),
+            },
+          };
+          setGuestSession(newGuestSession);
+          localStorage.setItem(
+            GUEST_SESSION_KEY,
+            JSON.stringify(newGuestSession)
+          );
+        }
+      } catch (error) {
+        console.error("Failed to initialize guest session:", error);
+      } finally {
+        setIsGuestLoading(false);
+      }
+    };
+
+    initializeGuestSession();
+  }, [isAuthenticated]);
+
+  // Update guest session in localStorage
+  const updateGuestSession = useCallback(
+    (updates: Partial<GuestSessionData>) => {
+      setGuestSession((prev) => {
+        if (!prev) return null;
+        const updated = {
+          ...prev,
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(GUEST_SESSION_KEY, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    []
+  );
 
   // Fetch user data when authenticated
   useEffect(() => {
@@ -129,45 +205,151 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated]);
 
-  // Placeholder functions - will implement meal plan operations later
+  // Guest limitations (replacing useGuestLimitations)
+  const getGuestLimitations = useCallback(() => {
+    if (!guestSession || isAuthenticated) {
+      return {
+        canCreateMealPlan: false,
+        generationsRemaining: 0,
+        generationsUsedToday: 0,
+        dailyGenerationLimitReached: false,
+      };
+    }
+
+    const today = new Date().toDateString();
+    const lastGenDate = guestSession.limitations?.lastGenerationDate
+      ? new Date(guestSession.limitations.lastGenerationDate).toDateString()
+      : null;
+    const isNewDay = !lastGenDate || lastGenDate !== today;
+
+    const generationsUsedToday = isNewDay
+      ? 0
+      : guestSession.limitations?.generationsToday || 0;
+    const maxGenerations =
+      guestSession.limitations?.maxGenerationsPerDay ||
+      GUEST_LIMITATIONS.MAX_GENERATIONS_PER_DAY;
+    const generationsRemaining = Math.max(
+      0,
+      maxGenerations - generationsUsedToday
+    );
+    const dailyGenerationLimitReached = generationsUsedToday >= maxGenerations;
+    const canCreateMealPlan =
+      !dailyGenerationLimitReached &&
+      (guestSession.mealPlans?.length || 0) < GUEST_LIMITATIONS.MAX_MEAL_PLANS;
+
+    return {
+      canCreateMealPlan,
+      generationsRemaining,
+      generationsUsedToday,
+      dailyGenerationLimitReached,
+    };
+  }, [guestSession, isAuthenticated]);
+
+  const guestLimitations = getGuestLimitations();
+
+  // Unified meal plan operations
   const createMealPlan = async (data: {
     budget: number;
     startDate?: string;
     endDate?: string;
   }): Promise<UnifiedMealPlan> => {
-    // TODO: Implement unified meal plan creation
-    throw new Error("Not implemented yet");
+    if (isGuest && guestSession) {
+      // Guest meal plan creation
+      if (!guestLimitations.canCreateMealPlan) {
+        throw new Error("Daily generation limit reached");
+      }
+
+      // Update generation count
+      const today = new Date().toDateString();
+      const lastGenDate = guestSession.limitations?.lastGenerationDate
+        ? new Date(guestSession.limitations.lastGenerationDate).toDateString()
+        : null;
+      const isNewDay = !lastGenDate || lastGenDate !== today;
+      const currentGenerations = isNewDay
+        ? 0
+        : guestSession.limitations?.generationsToday || 0;
+
+      updateGuestSession({
+        limitations: {
+          ...guestSession.limitations,
+          generationsToday: currentGenerations + 1,
+          lastGenerationDate: new Date().toISOString(),
+        },
+      });
+
+      // Generate guest meal plan
+      const newGuestMealPlan = await generateGuestMealPlan(data.budget);
+
+      // Clear existing meal plans (guests are limited to one)
+      const updatedMealPlans = [newGuestMealPlan];
+      updateGuestSession({
+        mealPlans: updatedMealPlans,
+      });
+
+      return newGuestMealPlan as UnifiedMealPlan;
+    } else if (isAuthenticated) {
+      // User meal plan creation
+      const startDate = data.startDate || new Date().toISOString();
+      const endDate =
+        data.endDate ||
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+      const userMealPlan = await createUserMealPlan({
+        budget: data.budget,
+        startDate,
+        endDate,
+      });
+
+      setUserMealPlans((prev) => [userMealPlan, ...prev]);
+      return userMealPlan as UnifiedMealPlan;
+    }
+    throw new Error("No valid session");
   };
 
   const deleteMealPlan = async (id: string): Promise<void> => {
-    // TODO: Implement unified meal plan deletion
-    throw new Error("Not implemented yet");
+    if (isGuest && guestSession) {
+      const updatedMealPlans = guestSession.mealPlans.filter(
+        (plan) => plan.id !== id
+      );
+      updateGuestSession({ mealPlans: updatedMealPlans });
+    } else if (isAuthenticated) {
+      await deleteUserMealPlan(id);
+      setUserMealPlans((prev) => prev.filter((plan) => plan.id !== id));
+    }
   };
 
   const refreshMealPlans = async (): Promise<void> => {
     if (isGuest) {
-      // Guest meal plans don't have a refresh method, they auto-update via the session
-      // The guestMealPlansHook.mealPlans will automatically reflect changes
+      // Guest meal plans are in state, no need to refresh
     } else if (isAuthenticated) {
       await fetchUserMealPlans();
     }
   };
 
-  // Placeholder user ingredient operations
+  // User ingredient operations
   const addUserIngredientAction = async (
     ingredient: CreateUserIngredientData
   ): Promise<UserIngredient> => {
-    // TODO: Implement user ingredient addition
-    throw new Error("Not implemented yet");
+    if (!isAuthenticated) {
+      throw new Error("Only authenticated users can add ingredients");
+    }
+
+    const newIngredient = await addUserIngredient(ingredient);
+    setUserIngredients((prev) => [newIngredient, ...prev]);
+    return newIngredient;
   };
 
   const deleteUserIngredientAction = async (id: string): Promise<void> => {
-    // TODO: Implement user ingredient deletion
-    throw new Error("Not implemented yet");
+    if (!isAuthenticated) return;
+
+    await deleteUserIngredient(id);
+    setUserIngredients((prev) =>
+      prev.filter((ingredient) => ingredient.id !== id)
+    );
   };
 
   const value: UserContextType = {
-    // User identification - migrated from useGuestOrUser hook
+    // User identification
     user: session?.user || null,
     guestSession,
     isAuthenticated,
@@ -175,11 +357,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     isLoading,
 
     // Unified meal plans (route to appropriate source)
-    mealPlans: isGuest ? guestMealPlansHook.mealPlans : userMealPlans,
+    mealPlans: isGuest ? guestSession?.mealPlans || [] : userMealPlans,
     createMealPlan,
     deleteMealPlan,
     refreshMealPlans,
-    isLoadingMealPlans: isGuest ? false : isLoadingMealPlans, // Guest doesn't have loading state
+    isLoadingMealPlans: isGuest ? false : isLoadingMealPlans,
 
     // Limitations (guests only)
     canCreateMealPlan: isGuest ? guestLimitations.canCreateMealPlan : true,
@@ -190,6 +372,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
     dailyGenerationLimitReached: isGuest
       ? guestLimitations.dailyGenerationLimitReached
       : false,
+
+    // Generated recipes (extracted from meal plans, deduplicated by ID)
+    generatedRecipes: Array.from(
+      new Map(
+        (isGuest ? guestSession?.mealPlans || [] : userMealPlans)
+          .flatMap((plan) =>
+            plan.meals
+              .map((meal) => meal.recipe)
+              .filter(
+                (recipe): recipe is NonNullable<typeof recipe> =>
+                  recipe != null && recipe.id != null
+              )
+          )
+          .map((recipe) => [recipe.id, recipe])
+      ).values()
+    ),
 
     // User ingredients (authenticated users only)
     userIngredients: isAuthenticated ? userIngredients : [],
