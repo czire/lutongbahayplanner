@@ -214,8 +214,7 @@ export const selectRecipesWithinBudget = (
 
   // Filter recipes that fit within the individual meal budget
   const recipesWithinBudget = recipes.filter((recipe) => {
-    const recipeCost = calculateRecipeTotalCost(recipe);
-    return recipeCost <= budget;
+    return recipe.costPerServing <= budget;
   });
 
   if (recipesWithinBudget.length === 0) {
@@ -264,15 +263,13 @@ export const selectRecipesWithinBudget = (
 
   console.log("Selected recipes within individual budget:", {
     breakfast: `${breakfastRecipe?.name} - ₱${
-      breakfastRecipe
-        ? calculateRecipeTotalCost(breakfastRecipe).toFixed(2)
-        : "0"
+      breakfastRecipe ? breakfastRecipe.costPerServing.toFixed(2) : "0"
     }`,
     lunch: `${lunchRecipe?.name} - ₱${
-      lunchRecipe ? calculateRecipeTotalCost(lunchRecipe).toFixed(2) : "0"
+      lunchRecipe ? lunchRecipe.costPerServing.toFixed(2) : "0"
     }`,
     dinner: `${dinnerRecipe?.name} - ₱${
-      dinnerRecipe ? calculateRecipeTotalCost(dinnerRecipe).toFixed(2) : "0"
+      dinnerRecipe ? dinnerRecipe.costPerServing.toFixed(2) : "0"
     }`,
     budget: `₱${budget.toFixed(2)} per meal`,
   });

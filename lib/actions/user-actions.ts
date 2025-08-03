@@ -1,4 +1,3 @@
-// lib/actions/user-actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -12,6 +11,7 @@ import type {
   CreateUserIngredientData,
   UserIngredient,
 } from "@/lib/types/user";
+import { clearGeneratedMealPlanFromLocalStorage } from "../utils/meal-plan-storage";
 
 /**
  * Generate weekly meal plan for authenticated users (does not save to DB)
@@ -182,6 +182,8 @@ export async function addUserMealPlan(
       `Saved meal plan with ${savedMealPlan.meals.length} meals to database for user ${session.user.id}`
     );
 
+    clearGeneratedMealPlanFromLocalStorage(session.user.id);
+
     revalidatePath("/meal-planner");
     return savedMealPlan as UserMealPlan;
   } catch (error) {
@@ -296,4 +298,98 @@ export async function deleteUserIngredient(ingredientId: string) {
   });
 
   revalidatePath("/ingredients");
+}
+
+/**
+ * Save selected days from generated meal plans to user's saved meal plans
+ * This is used when user clicks "Add Selected to Plans"
+ */
+export async function saveSelectedDaysToUserMealPlan(
+  selectedMealsData: {
+    planId: string;
+    dayIndex: number;
+    meals: any[];
+  }[]
+): Promise<UserMealPlan> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+
+  try {
+    if (selectedMealsData.length === 0) {
+      throw new Error("No meals selected to save");
+    }
+
+    // Flatten all selected meals
+    const allSelectedMeals = selectedMealsData.flatMap(
+      (dayData) => dayData.meals
+    );
+
+    if (allSelectedMeals.length === 0) {
+      throw new Error("No meals found in selected data");
+    }
+
+    // Calculate date range based on selected meals (start from today)
+    const startDate = new Date();
+    const endDate = new Date(
+      startDate.getTime() + (selectedMealsData.length - 1) * 24 * 60 * 60 * 1000
+    );
+
+    // Calculate budget (sum of all selected meal costs)
+    const totalBudget = allSelectedMeals.reduce((sum, meal) => {
+      return sum + (meal.recipe?.costPerServing || 0);
+    }, 0);
+
+    // Prepare meals data for database insertion
+    const mealsToCreate = allSelectedMeals.map((meal, index) => ({
+      recipeId: meal.recipeId,
+      type: meal.type,
+      date: new Date(
+        startDate.getTime() + Math.floor(index / 3) * 24 * 60 * 60 * 1000
+      ),
+    }));
+
+    // Create the meal plan in the database
+    const savedMealPlan = await prisma.mealPlan.create({
+      data: {
+        userId: session.user.id,
+        budget: totalBudget,
+        startDate: startDate,
+        endDate: endDate,
+        meals: {
+          create: mealsToCreate,
+        },
+      },
+      include: {
+        meals: {
+          include: {
+            recipe: {
+              include: {
+                ingredients: true,
+              },
+            },
+          },
+          orderBy: [{ date: "asc" }, { type: "asc" }],
+        },
+      },
+    });
+
+    console.log(
+      `Saved selected meal plan with ${savedMealPlan.meals.length} meals to database for user ${session.user.id}`
+    );
+
+    // Don't clear localStorage here - this is a server action
+    // The client will handle clearing localStorage after successful save
+
+    revalidatePath("/meal-planner");
+    return savedMealPlan as UserMealPlan;
+  } catch (error) {
+    console.error("Failed to save selected meals:", error);
+    throw new Error(
+      `Failed to save selected meals: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 }

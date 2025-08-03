@@ -2,6 +2,8 @@ export const routes = {
   // Main pages
   home: "/",
   mealPlanner: "/meal-planner",
+  myPlans: "/meal-planner/plans",
+  groceryList: "/grocery-list",
 
   // Authentication
   login: "/auth/login",

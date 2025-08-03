@@ -14,6 +14,7 @@ export default function Logo({ size = 100, showText = true }: LogoProps) {
         width={size}
         height={size}
         className="object-cover rounded-full shadow-lg"
+        priority
       />
     </div>
   );

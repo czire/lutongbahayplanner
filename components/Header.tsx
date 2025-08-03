@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  authNavigation,
-  mainNavigation,
-  NavigationItem,
-} from "@/lib/navigation";
+import { getNavigationForUser, NavigationItem } from "@/lib/navigation";
 import DebouncedLink from "./ui/DebouncedLink";
 import Logo from "./ui/Logo";
 import { useComingSoonDialog } from "./ui/ComingSoonDialog";
@@ -48,9 +44,9 @@ export default function Header({
   };
 
   // Determine navigation based on user state
-  const effectiveLeftNav = leftNavigation || mainNavigation.slice(0, 2); // Home and Meal Planner
-  const effectiveRightNav =
-    rightNavigation || (isAuthenticated ? [] : authNavigation);
+  const navigationForUser = getNavigationForUser(isAuthenticated, isGuest);
+  const effectiveLeftNav = leftNavigation || navigationForUser.main;
+  const effectiveRightNav = rightNavigation || navigationForUser.auth || [];
 
   const hasLeftNav = effectiveLeftNav && effectiveLeftNav.length > 0;
   const hasRightNav = effectiveRightNav && effectiveRightNav.length > 0;

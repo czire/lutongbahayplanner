@@ -1,16 +1,48 @@
 import { useUser } from "@/lib/contexts/UserContext";
 
 export function useMealPlanAccess(mealPlanId: string | string[]) {
-  const { mealPlans, generatedRecipes, isGuest, isLoading, isAuthenticated } =
-    useUser();
+  const {
+    savedMealPlans,
+    generatedMealPlans,
+    generatedRecipes,
+    isGuest,
+    isLoading,
+    isAuthenticated,
+    isLoadingMealPlans,
+  } = useUser();
+
+  // Overall loading state - if user context or meal plans are still loading
+  const isOverallLoading = isLoading || isLoadingMealPlans;
+
+  // Combine all meal plans to search in both saved and generated
+  const allMealPlans = [
+    ...(savedMealPlans || []),
+    ...(generatedMealPlans || []),
+  ];
 
   // Find the specific meal plan by ID
-  const currentMealPlan = mealPlans.find((plan) => plan.id === mealPlanId);
+  const currentMealPlan = allMealPlans.find((plan) => plan.id === mealPlanId);
 
-  // Security: For guests, additional validation that the meal plan belongs to current session
-  const isValidAccess = isGuest
-    ? currentMealPlan && mealPlans.includes(currentMealPlan)
-    : isAuthenticated && currentMealPlan;
+  // Security: Enhanced validation with proper loading states
+  const isValidAccess = (() => {
+    // Still loading - don't determine access yet
+    if (isOverallLoading) {
+      return true; // Assume valid while loading
+    }
+
+    // Guests: Check if meal plan exists in their session
+    if (isGuest) {
+      return currentMealPlan && allMealPlans.includes(currentMealPlan);
+    }
+
+    // Authenticated users: Check if meal plan exists and user is authenticated
+    if (isAuthenticated) {
+      return !!currentMealPlan;
+    }
+
+    // Not authenticated and not guest - invalid
+    return false;
+  })();
 
   // Extract recipes for the specific meal plan
   const filteredRecipes = generatedRecipes.filter((recipe) =>
@@ -22,8 +54,10 @@ export function useMealPlanAccess(mealPlanId: string | string[]) {
     filteredRecipes,
     isValidAccess,
     isGuest,
-    isLoading,
+    isLoading: isOverallLoading, // Return overall loading state
     isAuthenticated,
-    mealPlans,
+    mealPlans: allMealPlans, // For backward compatibility
+    savedMealPlans,
+    generatedMealPlans,
   };
 }

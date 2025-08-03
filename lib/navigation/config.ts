@@ -24,6 +24,11 @@ export const mainNavigation: NavigationItem[] = [
       "Plan your Filipino meals with budget and auto-generate grocery lists",
   },
   {
+    label: "My Plans",
+    href: "/meal-planner/plans",
+    description: "View and manage your saved meal plans",
+  },
+  {
     label: "Grocery List",
     href: "/grocery-list",
     description: "Manage your grocery items and shopping lists",
@@ -80,18 +85,26 @@ export function getNavigationForUser(
   isAuthenticated: boolean,
   isGuest: boolean
 ) {
-  const baseNav = [...mainNavigation];
+  // Filter navigation based on user state
+  let filteredMainNav = [...mainNavigation];
+
+  if (!isAuthenticated) {
+    // Remove "My Plans" for guests and non-authenticated users
+    filteredMainNav = mainNavigation.filter(
+      (item) => item.href !== "/meal-planner/plans"
+    );
+  }
 
   if (isAuthenticated) {
     return {
-      main: baseNav,
+      main: filteredMainNav,
       secondary: secondaryNavigation,
     };
   }
 
   if (isGuest) {
     return {
-      main: baseNav,
+      main: filteredMainNav,
       auth: authNavigation,
       secondary: secondaryNavigation,
     };
@@ -99,7 +112,7 @@ export function getNavigationForUser(
 
   // Not authenticated, not guest (new visitor)
   return {
-    main: baseNav,
+    main: filteredMainNav,
     auth: [...authNavigation, ...guestNavigation],
     secondary: secondaryNavigation,
   };

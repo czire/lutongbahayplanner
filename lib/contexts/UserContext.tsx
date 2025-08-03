@@ -68,8 +68,9 @@ interface UserContextType {
   isGuest: boolean;
   isLoading: boolean;
 
-  // Unified meal plan operations
-  mealPlans: UnifiedMealPlan[];
+  // Separated meal plan operations
+  savedMealPlans: UnifiedMealPlan[]; // Only saved plans from DB
+  generatedMealPlans: UnifiedMealPlan[]; // Temporary/preview plans from localStorage
   createMealPlan: (data: {
     budget: number;
     startDate?: string;
@@ -114,7 +115,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const isLoading = status === "loading" || isGuestLoading;
 
   // User state
-  const [userMealPlans, setUserMealPlans] = useState<UserMealPlan[]>([]);
+  const [savedUserMealPlans, setSavedUserMealPlans] = useState<UserMealPlan[]>(
+    []
+  );
+  const [generatedUserMealPlans, setGeneratedUserMealPlans] = useState<
+    UserMealPlan[]
+  >([]);
   const [userIngredients, setUserIngredients] = useState<UserIngredient[]>([]);
   const [isLoadingMealPlans, setIsLoadingMealPlans] = useState(false);
 
@@ -192,32 +198,32 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     setIsLoadingMealPlans(true);
     try {
-      const plans = await getUserMealPlans();
+      // Fetch saved plans from DB
+      const savedPlans = await getUserMealPlans();
+      setSavedUserMealPlans(savedPlans);
 
-      // Check if there's a generated meal plan in localStorage that isn't in the DB
+      // Check if there's a generated meal plan in localStorage
       const generatedPlan = getGeneratedMealPlanFromLocalStorage(
         session.user.id
       );
 
-      setUserMealPlans((prev) => {
-        if (generatedPlan) {
-          // Check if this generated plan is already saved in the DB
-          const isSavedInDb = plans.some(
-            (dbPlan) => dbPlan.id === generatedPlan.id
-          );
+      if (generatedPlan) {
+        // Check if this generated plan is already saved in the DB
+        const isSavedInDb = savedPlans.some(
+          (dbPlan) => dbPlan.id === generatedPlan.id
+        );
 
-          if (isSavedInDb) {
-            // The generated plan has been saved, just use DB data
-            return plans;
-          } else {
-            // Keep the generated plan at the top, add DB plans after
-            return [generatedPlan, ...plans];
-          }
+        if (isSavedInDb) {
+          // The generated plan has been saved, clear it from localStorage
+          clearGeneratedMealPlanFromLocalStorage(session.user.id);
+          setGeneratedUserMealPlans([]);
+        } else {
+          // Keep the generated plan separate
+          setGeneratedUserMealPlans([generatedPlan]);
         }
-
-        // No generated plan to preserve, just use DB data
-        return plans;
-      });
+      } else {
+        setGeneratedUserMealPlans([]);
+      }
     } catch (error) {
       console.error("Failed to fetch user meal plans:", error);
     } finally {
@@ -331,7 +337,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         endDate,
       });
 
-      setUserMealPlans((prev) => [userMealPlan, ...prev]);
+      // Save to localStorage as a generated/temporary plan (not to saved plans)
+      setGeneratedUserMealPlans([userMealPlan]);
       saveGeneratedMealPlanToLocalStorage(userMealPlan);
       return userMealPlan as UnifiedMealPlan;
     }
@@ -345,8 +352,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
       updateGuestSession({ mealPlans: updatedMealPlans });
     } else if (isAuthenticated) {
-      await deleteUserMealPlan(id);
-      setUserMealPlans((prev) => prev.filter((plan) => plan.id !== id));
+      // Check if it's a generated plan (temporary) or a saved plan
+      const isGenerated = generatedUserMealPlans.some((plan) => plan.id === id);
+
+      if (isGenerated) {
+        // Remove from generated plans and localStorage
+        setGeneratedUserMealPlans((prev) =>
+          prev.filter((plan) => plan.id !== id)
+        );
+        if (session?.user?.id) {
+          clearGeneratedMealPlanFromLocalStorage(session.user.id);
+        }
+      } else {
+        // Remove from saved plans and database
+        await deleteUserMealPlan(id);
+        setSavedUserMealPlans((prev) => prev.filter((plan) => plan.id !== id));
+      }
     }
   };
 
@@ -388,8 +409,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     isGuest,
     isLoading,
 
-    // Unified meal plans (route to appropriate source)
-    mealPlans: isGuest ? guestSession?.mealPlans || [] : userMealPlans,
+    // Separated meal plans
+    savedMealPlans: isGuest ? [] : savedUserMealPlans,
+    generatedMealPlans: isGuest
+      ? guestSession?.mealPlans || []
+      : generatedUserMealPlans,
     createMealPlan,
     deleteMealPlan,
     refreshMealPlans,
@@ -405,10 +429,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       ? guestLimitations.dailyGenerationLimitReached
       : false,
 
-    // Generated recipes (extracted from meal plans, deduplicated by ID)
+    // Generated recipes (extracted from all meal plans, deduplicated by ID)
     generatedRecipes: Array.from(
       new Map(
-        (isGuest ? guestSession?.mealPlans || [] : userMealPlans)
+        (isGuest
+          ? guestSession?.mealPlans || []
+          : [...savedUserMealPlans, ...generatedUserMealPlans]
+        )
           .flatMap((plan) =>
             plan.meals
               .map((meal) => meal.recipe)

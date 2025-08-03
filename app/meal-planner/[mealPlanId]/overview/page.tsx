@@ -21,6 +21,7 @@ const MealPlanOverviewPage = () => {
   const { currentMealPlan, isValidAccess, isGuest, isLoading } =
     useMealPlanAccess(mealPlanId as string);
 
+  // Show loading while data is being fetched
   if (isLoading) {
     return (
       <MealPlanLoading
@@ -31,7 +32,8 @@ const MealPlanOverviewPage = () => {
     );
   }
 
-  if (!isValidAccess) {
+  // Show error only after loading is complete and access is invalid
+  if (!isLoading && !isValidAccess) {
     const errorMessage = !currentMealPlan
       ? "The meal plan you're looking for doesn't exist or has been removed."
       : "You don't have permission to view this meal plan.";
@@ -42,6 +44,17 @@ const MealPlanOverviewPage = () => {
         backText="Back to Meal Planner"
         title="Meal Plan Not Found"
         message={errorMessage}
+      />
+    );
+  }
+
+  // Show loading if meal plan is not yet available (additional safety check)
+  if (!currentMealPlan) {
+    return (
+      <MealPlanLoading
+        backHref="/meal-planner"
+        backText="Back to Meal Planner"
+        loadingText="Loading meal plan data..."
       />
     );
   }

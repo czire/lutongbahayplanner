@@ -8,11 +8,16 @@ import {
 import DebouncedLink from "@/components/ui/DebouncedLink";
 import { MealCard } from "./MealCard";
 import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
+import { useUser } from "@/lib/contexts/UserContext";
 import { Checkbox } from "../ui/checkbox";
 import { useState } from "react";
 import { UserMealPlan } from "@/lib/types/user";
 import { Button } from "../ui/button";
-import { addUserMealPlan } from "@/lib/actions/user-actions";
+import {
+  addUserMealPlan,
+  saveSelectedDaysToUserMealPlan,
+} from "@/lib/actions/user-actions";
+import { clearGeneratedMealPlanFromLocalStorage } from "@/lib/utils/meal-plan-storage";
 
 // Unified meal plan type that works with both guest and user meal plans
 interface UnifiedMealPlan {
@@ -27,6 +32,7 @@ interface UnifiedMealPlan {
 
 interface MealPlanDisplayProps {
   mealPlans: UnifiedMealPlan[];
+  isPreview?: boolean; // New prop to indicate if these are generated/temporary plans
 }
 
 // Helper function to check if a meal plan is complete
@@ -67,9 +73,39 @@ const getMealPlanStatusMessage = (
   return null;
 };
 
-export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
+export function MealPlanDisplay({
+  mealPlans,
+  isPreview = false,
+}: MealPlanDisplayProps) {
   const [selectedDays, setSelectedDays] = useState<string[]>([]); // Store day identifiers instead
   const { isGuest, isAuthenticated } = useGuestOrUser();
+  const { refreshMealPlans, user } = useUser();
+
+  // Helper function to get all available day IDs
+  const getAllDayIds = () => {
+    const allDayIds: string[] = [];
+    mealPlans.forEach((plan) => {
+      const daysCount = Math.ceil(plan.meals.length / 3);
+      for (let dayIndex = 0; dayIndex < daysCount; dayIndex++) {
+        allDayIds.push(`${plan.id}-day-${dayIndex}`);
+      }
+    });
+    return allDayIds;
+  };
+
+  // Helper function to handle select all
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDays(getAllDayIds());
+    } else {
+      setSelectedDays([]);
+    }
+  };
+
+  // Check if all days are selected
+  const allDayIds = getAllDayIds();
+  const isAllSelected =
+    allDayIds.length > 0 && selectedDays.length === allDayIds.length;
 
   // Helper function to get selected meals data
   const getSelectedMealsData = () => {
@@ -95,58 +131,8 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
     return selectedMealsData;
   };
 
-  // Helper function to create a UserMealPlan from selected meals
-  const createMealPlanFromSelected = (): UserMealPlan | null => {
-    const selectedMealsData = getSelectedMealsData();
-
-    if (selectedMealsData.length === 0) {
-      return null;
-    }
-
-    // Flatten all selected meals
-    const allSelectedMeals = selectedMealsData.flatMap(
-      (dayData) => dayData.meals
-    );
-
-    if (allSelectedMeals.length === 0) {
-      return null;
-    }
-
-    // Get the source meal plan to extract basic info
-    const sourcePlan = mealPlans[0];
-    if (!sourcePlan) return null;
-
-    // Generate new ID for the meal plan
-    const newPlanId = `selected_${Date.now()}_${Math.random()
-      .toString(36)
-      .substring(2, 11)}`;
-
-    // Calculate date range based on selected meals
-    const startDate = new Date();
-    const endDate = new Date(
-      startDate.getTime() + (selectedMealsData.length - 1) * 24 * 60 * 60 * 1000
-    );
-
-    // Create the meal plan structure
-    const newMealPlan: UserMealPlan = {
-      id: newPlanId,
-      userId: sourcePlan.userId || "", // Will be set properly on the server
-      budget: sourcePlan.budget,
-      startDate,
-      endDate,
-      meals: allSelectedMeals.map((meal, index) => ({
-        ...meal,
-        id: `meal_${newPlanId}_${index}`,
-        mealPlanId: newPlanId,
-        date: new Date(
-          startDate.getTime() + Math.floor(index / 3) * 24 * 60 * 60 * 1000
-        ),
-      })),
-      createdAt: new Date(),
-    };
-
-    return newMealPlan;
-  };
+  // Helper function to create a UserMealPlan from selected meals - REMOVED
+  // This functionality is now handled by saveSelectedDaysToUserMealPlan server action
 
   // Filter out meal plans that have no meals or are invalid
   const validMealPlans = mealPlans.filter(
@@ -206,14 +192,89 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
     <div className="mt-12">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          {isGuest ? "Today's Meal Plan" : "Your Weekly Meal Plan"}
+          {isGuest
+            ? "Today's Meal Plan"
+            : isPreview
+            ? "Generated Meal Plan Preview"
+            : "Your Saved Meal Plans"}
         </h2>
         <p className="text-gray-600">
           {isGuest
             ? "Delicious Filipino dishes for today within your budget"
-            : "A week of delicious Filipino meals planned just for you"}
+            : isPreview
+            ? "Review and select days to add to your saved plans"
+            : "Your saved meal plans for easy access"}
         </p>
+        {isPreview && (
+          <div className="mt-2 text-sm text-orange-600 bg-orange-50 px-3 py-2 rounded-lg inline-block">
+            💡 This is a preview. Use the controls below to add selected days to
+            your saved plans.
+          </div>
+        )}
       </div>
+
+      {/* Top Controls for Authenticated Users - Only show for preview/generated plans */}
+      {!isGuest && isAuthenticated && isPreview && allDayIds.length > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4 sticky top-3 z-50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="select-all"
+                className="w-5 h-5 border-2 border-orange-400 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                checked={isAllSelected}
+                onCheckedChange={handleSelectAll}
+              />
+              <label
+                htmlFor="select-all"
+                className="text-sm font-medium text-gray-700 cursor-pointer"
+              >
+                Select All Days ({allDayIds.length} total)
+              </label>
+              {selectedDays.length > 0 && (
+                <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                  {selectedDays.length} selected
+                </span>
+              )}
+            </div>
+
+            <Button
+              className={`px-6 py-2 shadow-lg transform transition-all duration-200 hover:scale-[1.02] ${
+                selectedDays.length === 0
+                  ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                  : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+              }`}
+              onClick={async () => {
+                const selectedMealsData = getSelectedMealsData();
+                if (selectedMealsData.length > 0) {
+                  try {
+                    await saveSelectedDaysToUserMealPlan(selectedMealsData);
+                    // Clear selections after successful save
+                    setSelectedDays([]);
+                    // Clear generated meal plan from localStorage on client side
+                    if (user?.id) {
+                      clearGeneratedMealPlanFromLocalStorage(user.id);
+                    }
+                    // Refresh meal plans to show updated saved plans and clear generated ones
+                    await refreshMealPlans();
+                    console.log("Selected meals saved successfully!");
+                  } catch (error) {
+                    console.error("Failed to save selected meals:", error);
+                  }
+                } else {
+                  console.warn("No meals selected");
+                }
+              }}
+              disabled={selectedDays.length === 0}
+            >
+              {selectedDays.length === 0
+                ? "Add Selected to Plans"
+                : `Add ${selectedDays.length} Day${
+                    selectedDays.length > 1 ? "s" : ""
+                  } to Plans`}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6">
         {validMealPlans.map((guestMealPlan) => {
@@ -422,24 +483,30 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
                                     day: "numeric",
                                   })}
                                 </h4>
-                                <Checkbox
-                                  className="absolute right-0 top-0 w-5 h-5 border border-gray-500"
-                                  checked={selectedDays.includes(
-                                    `${guestMealPlan.id}-day-${dayIndex}`
-                                  )}
-                                  onCheckedChange={(checked) => {
-                                    const dayId = `${guestMealPlan.id}-day-${dayIndex}`;
-                                    if (checked) {
-                                      setSelectedDays([...selectedDays, dayId]);
-                                    } else {
-                                      setSelectedDays(
-                                        selectedDays.filter(
-                                          (id) => id !== dayId
-                                        )
-                                      );
-                                    }
-                                  }}
-                                />
+                                {/* Only show checkboxes for preview/generated plans */}
+                                {isPreview && (
+                                  <Checkbox
+                                    className="absolute right-0 top-0 w-5 h-5 border border-gray-500"
+                                    checked={selectedDays.includes(
+                                      `${guestMealPlan.id}-day-${dayIndex}`
+                                    )}
+                                    onCheckedChange={(checked) => {
+                                      const dayId = `${guestMealPlan.id}-day-${dayIndex}`;
+                                      if (checked) {
+                                        setSelectedDays([
+                                          ...selectedDays,
+                                          dayId,
+                                        ]);
+                                      } else {
+                                        setSelectedDays(
+                                          selectedDays.filter(
+                                            (id) => id !== dayId
+                                          )
+                                        );
+                                      }
+                                    }}
+                                  />
+                                )}
                               </div>
 
                               <div className="grid gap-4 md:grid-cols-3">
@@ -502,50 +569,26 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
                         } Recipe Details`}
                   </DebouncedLink>
                 ) : (
-                  // Authenticated users get multiple navigation options
+                  // Authenticated users get different options based on plan type
                   <div className="space-y-3">
-                    <Button
-                      className={`w-full justify-center shadow-lg transform transition-all duration-200 hover:scale-[1.02] ${
-                        selectedDays.length === 0
-                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                          : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
-                      }`}
-                      onClick={async () => {
-                        const selectedMealPlan = createMealPlanFromSelected();
-                        if (selectedMealPlan) {
-                          try {
-                            await addUserMealPlan(selectedMealPlan);
-                            // Clear selections after successful save
-                            setSelectedDays([]);
-                            // You could add a success message here
-                            console.log("Selected meals saved successfully!");
-                          } catch (error) {
-                            console.error(
-                              "Failed to save selected meals:",
-                              error
-                            );
-                            // You could add an error message here
-                          }
-                        } else {
-                          console.warn("No meals selected");
-                          // You could add a warning message here
-                        }
-                      }}
-                      disabled={selectedDays.length === 0}
-                    >
-                      {selectedDays.length === 0
-                        ? "Select Days to Add to Plan"
-                        : `Add ${selectedDays.length} Selected Day${
-                            selectedDays.length > 1 ? "s" : ""
-                          } to Plan`}
-                    </Button>
                     <DebouncedLink
                       className="w-full justify-center bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
                       href={`/meal-planner/${guestMealPlan.id}/overview`}
                       variant="default"
                     >
-                      📅 View Day-by-Day Overview
+                      📅 View Day-by-Day Details
                     </DebouncedLink>
+                    {isPreview && selectedDays.length > 0 && (
+                      <div className="text-center text-sm text-gray-600 bg-orange-50 py-2 rounded">
+                        💡 Use the controls above to add selected days to your
+                        plans
+                      </div>
+                    )}
+                    {!isPreview && (
+                      <div className="text-center text-sm text-gray-500 bg-green-50 py-2 rounded">
+                        ✅ This plan is saved in your meal plans
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
