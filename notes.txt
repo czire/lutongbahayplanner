@@ -46,3 +46,4 @@ TODO:
 - add guest session persistence across browser sessions
 - implement guest-to-user migration feature
 - security vulnerability in guest: if limit is reached; user can just delete his session and it'll be reset
+- when user is generating meal plan, just generate it but give the user a choice if he wants to add it to his plan

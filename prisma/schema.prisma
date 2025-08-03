@@ -64,7 +64,7 @@ model VerificationToken {
 
 model MealPlan {
   id         String     @id @default(cuid())
-  user       User       @relation(fields: [userId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String
   startDate  DateTime
   endDate    DateTime
@@ -76,7 +76,7 @@ model MealPlan {
 model UserIngredient {
   id        String     @id @default(cuid())
   name      String
-  user      User       @relation(fields: [userId], references: [id])
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   quantity  String?    // e.g., "1 cup", for leftovers tracking
   unit      String?    // e.g., grams, tsp, etc.
@@ -85,9 +85,9 @@ model UserIngredient {
 
 model Meal {
   id           String    @id @default(cuid())
-  mealPlan     MealPlan  @relation(fields: [mealPlanId], references: [id])
+  mealPlan     MealPlan  @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
   mealPlanId   String
-  recipe       Recipe    @relation(fields: [recipeId], references: [id])
+  recipe       Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId     String
   date         DateTime
   type         MealType  // breakfast, lunch, dinner
@@ -121,7 +121,7 @@ model Ingredient {
 model RecipeIngredient {
   id              String     @id @default(cuid())
 
-  recipe          Recipe     @relation(fields: [recipeId], references: [id])
+  recipe          Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId        String
 
   name            String
@@ -139,13 +139,13 @@ model Step {
   id        String   @id @default(cuid())
   order     Int
   text      String
-  recipe    Recipe   @relation(fields: [recipeId], references: [id])
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId  String
 }
 
 model Substitution {
   id            String   @id @default(cuid())
-  recipe        Recipe   @relation(fields: [recipeId], references: [id])
+  recipe        Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   recipeId      String
   originalItem  String   // e.g., "Shrimp"
   alternative   String   // e.g., "Tofu"

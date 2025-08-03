@@ -23,6 +23,13 @@ import {
   deleteUserIngredient,
 } from "@/lib/actions/user-actions";
 
+// Storage utilities
+import {
+  getGeneratedMealPlanFromLocalStorage,
+  saveGeneratedMealPlanToLocalStorage,
+  clearGeneratedMealPlanFromLocalStorage,
+} from "@/lib/utils/meal-plan-storage";
+
 import type { User } from "next-auth";
 import type { GuestSessionData, GuestMealPlan } from "@/lib/types/guest";
 import type {
@@ -178,21 +185,45 @@ export function UserProvider({ children }: { children: ReactNode }) {
       fetchUserMealPlans();
       fetchUserIngredients();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchUserMealPlans = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !session?.user?.id) return;
 
     setIsLoadingMealPlans(true);
     try {
       const plans = await getUserMealPlans();
-      setUserMealPlans(plans);
+
+      // Check if there's a generated meal plan in localStorage that isn't in the DB
+      const generatedPlan = getGeneratedMealPlanFromLocalStorage(
+        session.user.id
+      );
+
+      setUserMealPlans((prev) => {
+        if (generatedPlan) {
+          // Check if this generated plan is already saved in the DB
+          const isSavedInDb = plans.some(
+            (dbPlan) => dbPlan.id === generatedPlan.id
+          );
+
+          if (isSavedInDb) {
+            // The generated plan has been saved, just use DB data
+            return plans;
+          } else {
+            // Keep the generated plan at the top, add DB plans after
+            return [generatedPlan, ...plans];
+          }
+        }
+
+        // No generated plan to preserve, just use DB data
+        return plans;
+      });
     } catch (error) {
       console.error("Failed to fetch user meal plans:", error);
     } finally {
       setIsLoadingMealPlans(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, session?.user?.id]);
 
   const fetchUserIngredients = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -301,6 +332,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
 
       setUserMealPlans((prev) => [userMealPlan, ...prev]);
+      saveGeneratedMealPlanToLocalStorage(userMealPlan);
       return userMealPlan as UnifiedMealPlan;
     }
     throw new Error("No valid session");

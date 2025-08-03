@@ -8,6 +8,11 @@ import {
 import DebouncedLink from "@/components/ui/DebouncedLink";
 import { MealCard } from "./MealCard";
 import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
+import { Checkbox } from "../ui/checkbox";
+import { useState } from "react";
+import { UserMealPlan } from "@/lib/types/user";
+import { Button } from "../ui/button";
+import { addUserMealPlan } from "@/lib/actions/user-actions";
 
 // Unified meal plan type that works with both guest and user meal plans
 interface UnifiedMealPlan {
@@ -63,7 +68,85 @@ const getMealPlanStatusMessage = (
 };
 
 export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
+  const [selectedDays, setSelectedDays] = useState<string[]>([]); // Store day identifiers instead
   const { isGuest, isAuthenticated } = useGuestOrUser();
+
+  // Helper function to get selected meals data
+  const getSelectedMealsData = () => {
+    const selectedMealsData: any[] = [];
+
+    mealPlans.forEach((plan) => {
+      const daysCount = Math.ceil(plan.meals.length / 3);
+
+      for (let dayIndex = 0; dayIndex < daysCount; dayIndex++) {
+        const dayId = `${plan.id}-day-${dayIndex}`;
+
+        if (selectedDays.includes(dayId)) {
+          const dayMeals = plan.meals.slice(dayIndex * 3, (dayIndex + 1) * 3);
+          selectedMealsData.push({
+            planId: plan.id,
+            dayIndex,
+            meals: dayMeals,
+          });
+        }
+      }
+    });
+
+    return selectedMealsData;
+  };
+
+  // Helper function to create a UserMealPlan from selected meals
+  const createMealPlanFromSelected = (): UserMealPlan | null => {
+    const selectedMealsData = getSelectedMealsData();
+
+    if (selectedMealsData.length === 0) {
+      return null;
+    }
+
+    // Flatten all selected meals
+    const allSelectedMeals = selectedMealsData.flatMap(
+      (dayData) => dayData.meals
+    );
+
+    if (allSelectedMeals.length === 0) {
+      return null;
+    }
+
+    // Get the source meal plan to extract basic info
+    const sourcePlan = mealPlans[0];
+    if (!sourcePlan) return null;
+
+    // Generate new ID for the meal plan
+    const newPlanId = `selected_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
+
+    // Calculate date range based on selected meals
+    const startDate = new Date();
+    const endDate = new Date(
+      startDate.getTime() + (selectedMealsData.length - 1) * 24 * 60 * 60 * 1000
+    );
+
+    // Create the meal plan structure
+    const newMealPlan: UserMealPlan = {
+      id: newPlanId,
+      userId: sourcePlan.userId || "", // Will be set properly on the server
+      budget: sourcePlan.budget,
+      startDate,
+      endDate,
+      meals: allSelectedMeals.map((meal, index) => ({
+        ...meal,
+        id: `meal_${newPlanId}_${index}`,
+        mealPlanId: newPlanId,
+        date: new Date(
+          startDate.getTime() + Math.floor(index / 3) * 24 * 60 * 60 * 1000
+        ),
+      })),
+      createdAt: new Date(),
+    };
+
+    return newMealPlan;
+  };
 
   // Filter out meal plans that have no meals or are invalid
   const validMealPlans = mealPlans.filter(
@@ -263,13 +346,6 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
                       <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         Your Meals for Today
                       </h3>
-                      <div className="flex justify-center items-center gap-2 text-sm text-gray-500">
-                        <span>🌅 Breakfast</span>
-                        <span>•</span>
-                        <span>🌞 Lunch</span>
-                        <span>•</span>
-                        <span>🌆 Dinner</span>
-                      </div>
                     </div>
 
                     <div className="grid gap-6 md:grid-cols-3">
@@ -337,7 +413,7 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
                               key={dayIndex}
                               className="border rounded-lg p-4 bg-gray-50"
                             >
-                              <div className="text-center mb-4">
+                              <div className="text-center mb-4 relative">
                                 <h4 className="font-semibold text-gray-800">
                                   Day {dayIndex + 1} -{" "}
                                   {dayDate.toLocaleDateString("en-US", {
@@ -346,6 +422,24 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
                                     day: "numeric",
                                   })}
                                 </h4>
+                                <Checkbox
+                                  className="absolute right-0 top-0 w-5 h-5 border border-gray-500"
+                                  checked={selectedDays.includes(
+                                    `${guestMealPlan.id}-day-${dayIndex}`
+                                  )}
+                                  onCheckedChange={(checked) => {
+                                    const dayId = `${guestMealPlan.id}-day-${dayIndex}`;
+                                    if (checked) {
+                                      setSelectedDays([...selectedDays, dayId]);
+                                    } else {
+                                      setSelectedDays(
+                                        selectedDays.filter(
+                                          (id) => id !== dayId
+                                        )
+                                      );
+                                    }
+                                  }}
+                                />
                               </div>
 
                               <div className="grid gap-4 md:grid-cols-3">
@@ -410,20 +504,47 @@ export function MealPlanDisplay({ mealPlans }: MealPlanDisplayProps) {
                 ) : (
                   // Authenticated users get multiple navigation options
                   <div className="space-y-3">
+                    <Button
+                      className={`w-full justify-center shadow-lg transform transition-all duration-200 hover:scale-[1.02] ${
+                        selectedDays.length === 0
+                          ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                          : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
+                      }`}
+                      onClick={async () => {
+                        const selectedMealPlan = createMealPlanFromSelected();
+                        if (selectedMealPlan) {
+                          try {
+                            await addUserMealPlan(selectedMealPlan);
+                            // Clear selections after successful save
+                            setSelectedDays([]);
+                            // You could add a success message here
+                            console.log("Selected meals saved successfully!");
+                          } catch (error) {
+                            console.error(
+                              "Failed to save selected meals:",
+                              error
+                            );
+                            // You could add an error message here
+                          }
+                        } else {
+                          console.warn("No meals selected");
+                          // You could add a warning message here
+                        }
+                      }}
+                      disabled={selectedDays.length === 0}
+                    >
+                      {selectedDays.length === 0
+                        ? "Select Days to Add to Plan"
+                        : `Add ${selectedDays.length} Selected Day${
+                            selectedDays.length > 1 ? "s" : ""
+                          } to Plan`}
+                    </Button>
                     <DebouncedLink
                       className="w-full justify-center bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
                       href={`/meal-planner/${guestMealPlan.id}/overview`}
                       variant="default"
                     >
                       📅 View Day-by-Day Overview
-                    </DebouncedLink>
-
-                    <DebouncedLink
-                      className="w-full justify-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg transform transition-all duration-200 hover:scale-[1.02]"
-                      href={`/meal-planner/${guestMealPlan.id}`}
-                      variant="default"
-                    >
-                      🍳 View All Recipe Details
                     </DebouncedLink>
                   </div>
                 )}

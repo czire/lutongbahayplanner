@@ -14,7 +14,8 @@ import type {
 } from "@/lib/types/user";
 
 /**
- * Generate weekly meal plan for authenticated users
+ * Generate weekly meal plan for authenticated users (does not save to DB)
+ * Returns generated meal plan data that can be previewed before saving
  */
 export async function createUserMealPlan(
   data: CreateUserMealPlanData
@@ -49,17 +50,13 @@ export async function createUserMealPlan(
     const totalBudget = dailyBudget * daysInPlan;
 
     console.log(
-      `Creating ${daysInPlan}-day meal plan with daily budget: ₱${dailyBudget.toFixed(
+      `Generating ${daysInPlan}-day meal plan with daily budget: ₱${dailyBudget.toFixed(
         2
       )} (total: ₱${totalBudget.toFixed(2)})`
     );
 
     // Generate meals for each day
-    const mealsToCreate: Array<{
-      recipeId: string;
-      type: MealType;
-      date: Date;
-    }> = [];
+    const mealsData = [];
 
     for (let day = 0; day < daysInPlan; day++) {
       const currentDate = new Date(startDate);
@@ -77,33 +74,92 @@ export async function createUserMealPlan(
         );
       }
 
-      // Add meals for this day
-      mealsToCreate.push(
+      // Add meals for this day (with full recipe data for preview)
+      mealsData.push(
         {
           recipeId: breakfastRecipe.id,
           type: "BREAKFAST" as MealType,
           date: currentDate,
+          recipe: breakfastRecipe,
         },
         {
           recipeId: lunchRecipe.id,
           type: "LUNCH" as MealType,
           date: currentDate,
+          recipe: lunchRecipe,
         },
         {
           recipeId: dinnerRecipe.id,
           type: "DINNER" as MealType,
           date: currentDate,
+          recipe: dinnerRecipe,
         }
       );
     }
 
-    // Create meal plan with all meals
-    const mealPlan = await prisma.mealPlan.create({
+    // Return generated meal plan data (NOT saved to DB yet)
+    const generatedMealPlan = {
+      id: `temp-${Date.now()}`, // Temporary ID for preview
+      userId: session.user.id,
+      budget: totalBudget,
+      startDate: startDate,
+      endDate: endDate,
+      meals: mealsData.map((meal) => ({
+        id: `temp-meal-${Date.now()}-${Math.random()}`, // Temporary meal ID
+        mealPlanId: `temp-${Date.now()}`, // Temporary meal plan ID
+        recipeId: meal.recipeId,
+        type: meal.type,
+        date: meal.date,
+        recipe: meal.recipe,
+      })),
+      createdAt: new Date(),
+    };
+
+    console.log(
+      `Generated meal plan with ${mealsData.length} meals for user ${session.user.id} (not saved to DB)`
+    );
+
+    return generatedMealPlan as UserMealPlan;
+  } catch (error) {
+    console.error("Failed to generate user meal plan:", error);
+    throw new Error(
+      `Failed to generate meal plan: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+}
+
+export async function addUserMealPlan(
+  mealPlan: UserMealPlan
+): Promise<UserMealPlan> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+
+  try {
+    // Verify the meal plan belongs to the current user
+    if (mealPlan.userId !== session.user.id) {
+      throw new Error(
+        "Unauthorized: Meal plan does not belong to current user"
+      );
+    }
+
+    // Prepare meals data for database insertion (exclude recipe data, only keep references)
+    const mealsToCreate = mealPlan.meals.map((meal) => ({
+      recipeId: meal.recipeId,
+      type: meal.type,
+      date: new Date(meal.date),
+    }));
+
+    // Create the meal plan in the database
+    const savedMealPlan = await prisma.mealPlan.create({
       data: {
         userId: session.user.id,
-        budget: totalBudget, // Store the total budget for the entire meal plan
-        startDate: new Date(data.startDate),
-        endDate: new Date(data.endDate),
+        budget: mealPlan.budget,
+        startDate: new Date(mealPlan.startDate),
+        endDate: new Date(mealPlan.endDate),
         meals: {
           create: mealsToCreate,
         },
@@ -123,15 +179,15 @@ export async function createUserMealPlan(
     });
 
     console.log(
-      `Created weekly meal plan with ${mealPlan.meals.length} meals for user ${session.user.id}`
+      `Saved meal plan with ${savedMealPlan.meals.length} meals to database for user ${session.user.id}`
     );
 
     revalidatePath("/meal-planner");
-    return mealPlan as UserMealPlan;
+    return savedMealPlan as UserMealPlan;
   } catch (error) {
-    console.error("Failed to create user meal plan:", error);
+    console.error("Failed to save user meal plan:", error);
     throw new Error(
-      `Failed to create meal plan: ${
+      `Failed to save meal plan: ${
         error instanceof Error ? error.message : "Unknown error"
       }`
     );
