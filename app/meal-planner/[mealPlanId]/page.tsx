@@ -1,20 +1,18 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { RecipeCard } from "@/components/meal-planner/RecipeCard";
-import { CostSummary } from "@/components/meal-planner/CostSummary";
 import { MealPlanLayout } from "@/components/meal-planner/MealPlanLayout";
 import { MealPlanHeader } from "@/components/meal-planner/MealPlanHeader";
 import { MealPlanLoading } from "@/components/meal-planner/MealPlanLoading";
 import { MealPlanError } from "@/components/meal-planner/MealPlanError";
-import { EmptyState } from "@/components/meal-planner/EmptyState";
+import { MealPlanTabs } from "@/components/meal-planner/MealPlanTabs";
 import { useMealPlanAccess } from "@/lib/hooks/useMealPlanAccess";
-import { calculateRecipeCost } from "@/lib/utils/meal-plan-utils";
-import { GuestRecipe } from "@/lib/types/guest";
-import { ArrowRight, ChefHat } from "lucide-react";
+import { useUser } from "@/lib/contexts/UserContext";
+import { ChefHat } from "lucide-react";
 
 const Page = () => {
   const { mealPlanId } = useParams();
+  const { refreshMealPlans } = useUser();
   const {
     currentMealPlan,
     filteredRecipes,
@@ -22,6 +20,11 @@ const Page = () => {
     isLoading,
     isGuest,
   } = useMealPlanAccess(mealPlanId as string);
+
+  // Handle meal plan updates
+  const handleMealPlanUpdate = async () => {
+    await refreshMealPlans();
+  };
 
   if (isLoading) {
     return (
@@ -70,7 +73,7 @@ const Page = () => {
       {/* Title Section */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Grocery List & Meal Details
+          Meal Plan Management
         </h1>
         <div className="flex items-center gap-4">
           <div className="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-semibold">
@@ -88,40 +91,13 @@ const Page = () => {
         </div>
       </div>
 
-      {filteredRecipes.length > 0 ? (
-        <div className="space-y-8">
-          {/* Recipes Grid */}
-          <div className="grid gap-6">
-            {filteredRecipes.map((recipe: GuestRecipe) => {
-              const recipeCost = calculateRecipeCost(recipe);
-              return (
-                <RecipeCard
-                  key={recipe.id}
-                  recipe={recipe}
-                  recipeCost={recipeCost}
-                  calculateRecipeCost={calculateRecipeCost}
-                />
-              );
-            })}
-          </div>
-
-          {/* Cost Summary */}
-          <CostSummary
-            recipes={filteredRecipes}
-            currentMealPlan={currentMealPlan as any}
-            calculateRecipeCost={calculateRecipeCost}
-          />
-        </div>
-      ) : (
-        <EmptyState
-          emoji="🍽️"
-          title="No recipes found"
-          description="Your meal plan doesn't have any recipes yet."
-          actionHref="/meal-planner"
-          actionText="Generate Meal Plan"
-          actionIcon={<ArrowRight size={20} />}
-        />
-      )}
+      {/* Tabbed Interface for Recipes and Manual Management */}
+      <MealPlanTabs
+        currentMealPlan={currentMealPlan as any}
+        filteredRecipes={filteredRecipes}
+        isGuest={isGuest}
+        onMealPlanUpdate={handleMealPlanUpdate}
+      />
     </MealPlanLayout>
   );
 };

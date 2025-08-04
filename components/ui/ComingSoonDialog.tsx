@@ -23,9 +23,7 @@ export default function ComingSoonDialog({
   isOpen,
   onClose,
   title = "🚧 Coming Soon!",
-  description = `We're working hard to bring you this feature. For now, you can continue exploring the app as a guest.
-
-Your meal planning adventure awaits! 🍽️`,
+  description = `We're working hard to bring you this feature. For now, you can continue exploring the app as a guest or sign in with facebook/google. Your meal planning adventure awaits! 🍽️`,
   actionText = "Got it!",
 }: ComingSoonDialogProps) {
   return (

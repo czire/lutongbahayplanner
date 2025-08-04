@@ -57,7 +57,7 @@ export const GuestBanner = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-orange-700">
                     <div className="flex items-center gap-2">
                       <Clock size={14} />
-                      <span>Limited to 5 meal plans per session</span>
+                      <span>Limited to 3 meal plans per session</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <User size={14} />

@@ -287,9 +287,7 @@ export default function Header({
         </nav>
       </header>
 
-      <ComingSoonDialog
-        description={`We're working hard to bring you the authentication feature. For now, you can continue exploring the app as a guest. Your meal planning adventure awaits! 🍽️`}
-      />
+      <ComingSoonDialog />
     </>
   );
 }
