@@ -1,25 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, ArrowUpDown, Calendar, Clock } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { MealType } from "@prisma/client";
 import type { UserMealPlan, UserMeal } from "@/lib/types/user";
@@ -30,6 +11,11 @@ import {
   swapMeals,
   getAvailableRecipes,
 } from "@/lib/actions/manual-meal-actions";
+import { MealPlanCompletionCard } from "./MealPlanCompletionCard";
+import { AddMealDialog } from "./AddMealDialog";
+import { MealDayCard } from "./MealDayCard";
+import { SwapModeCard } from "./SwapModeCard";
+import { MealPlanActions } from "./MealPlanActions";
 
 interface ManualMealManagerProps {
   mealPlan: UserMealPlan | GuestMealPlan;
@@ -166,6 +152,14 @@ export const ManualMealManager = ({
     }
   };
 
+  // Handle dialog close - reset form
+  const handleDialogClose = () => {
+    setSelectedRecipeId("");
+    setSelectedDate("");
+    setSelectedMealType("");
+    setIsAddDialogOpen(false);
+  };
+
   // Handle removing a meal
   const handleRemoveMeal = async (mealId: string) => {
     const confirmed = window.confirm(
@@ -226,195 +220,107 @@ export const ManualMealManager = ({
   const mealsByDate = getMealsByDate();
   const dateOptions = getDateOptions();
 
+  // Calculate meal plan completion statistics
+  const getMealPlanStats = () => {
+    const totalPossibleMeals = dateOptions.length * 3; // 3 meals per day
+    const currentMealCount = mealPlan.meals.length;
+
+    // Find missing meals
+    const missingMeals: Array<{
+      date: string;
+      mealType: MealType;
+      dateLabel: string;
+    }> = [];
+    Object.entries(mealsByDate).forEach(([date, meals]) => {
+      (["BREAKFAST", "LUNCH", "DINNER"] as MealType[]).forEach((mealType) => {
+        if (!meals[mealType]) {
+          const dateLabel = format(parseISO(date), "MMM dd");
+          missingMeals.push({ date, mealType, dateLabel });
+        }
+      });
+    });
+
+    return {
+      totalPossibleMeals,
+      currentMealCount,
+      missingMeals: missingMeals.slice(0, 6), // Show only first 6 missing meals
+      totalMissingCount: missingMeals.length,
+    };
+  };
+
+  const stats = getMealPlanStats();
+
+  // Handle quick add from completion card
+  const handleQuickAdd = (date: string, mealType: MealType) => {
+    setSelectedDate(date);
+    setSelectedMealType(mealType);
+    setIsAddDialogOpen(true);
+  };
+
+  // Handle add meal from slot
+  const handleAddMealFromSlot = (date: string, mealType: MealType) => {
+    setSelectedDate(date);
+    setSelectedMealType(mealType);
+    setIsAddDialogOpen(true);
+  };
+
+  // Handle toggle swap mode
+  const handleToggleSwapMode = () => {
+    setIsSwapMode(!isSwapMode);
+    setSelectedMealForSwap(null);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Meal Plan Completion Status */}
+      <MealPlanCompletionCard
+        totalPossibleMeals={stats.totalPossibleMeals}
+        currentMealCount={stats.currentMealCount}
+        missingMeals={stats.missingMeals}
+        totalMissingCount={stats.totalMissingCount}
+        isLoading={isLoading}
+        onQuickAdd={handleQuickAdd}
+      />
+
       {/* Action Buttons */}
-      <div className="flex gap-4 flex-wrap">
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2" size={16} />
-              Add Meal
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Meal</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Recipe</label>
-                <Select
-                  value={selectedRecipeId}
-                  onValueChange={setSelectedRecipeId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a recipe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRecipes.map((recipe) => (
-                      <SelectItem key={recipe.id} value={recipe.id}>
-                        {recipe.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Date</label>
-                <Select value={selectedDate} onValueChange={setSelectedDate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dateOptions.map((date) => (
-                      <SelectItem key={date.value} value={date.value}>
-                        {date.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Meal Type</label>
-                <Select
-                  value={selectedMealType}
-                  onValueChange={(value) =>
-                    setSelectedMealType(value as MealType | "")
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BREAKFAST">Breakfast</SelectItem>
-                    <SelectItem value="LUNCH">Lunch</SelectItem>
-                    <SelectItem value="DINNER">Dinner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              <Button onClick={handleAddMeal} disabled={isLoading}>
-                {isLoading ? "Adding..." : "Add Meal"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Button
-          variant={isSwapMode ? "destructive" : "outline"}
-          onClick={() => {
-            setIsSwapMode(!isSwapMode);
-            setSelectedMealForSwap(null);
-          }}
-        >
-          <ArrowUpDown className="mr-2" size={16} />
-          {isSwapMode ? "Cancel Swap" : "Swap Meals"}
-        </Button>
-      </div>
+      <MealPlanActions
+        isAddDialogOpen={isAddDialogOpen}
+        onAddDialogChange={(open) => {
+          if (!open) handleDialogClose();
+          else setIsAddDialogOpen(true);
+        }}
+        selectedRecipeId={selectedRecipeId}
+        setSelectedRecipeId={setSelectedRecipeId}
+        selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
+        selectedMealType={selectedMealType}
+        setSelectedMealType={setSelectedMealType}
+        availableRecipes={availableRecipes}
+        dateOptions={dateOptions}
+        isLoading={isLoading}
+        onAddMeal={handleAddMeal}
+        onCancel={handleDialogClose}
+        isSwapMode={isSwapMode}
+        onToggleSwapMode={handleToggleSwapMode}
+      />
 
       {/* Swap Mode Instructions */}
-      {isSwapMode && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardContent className="pt-4">
-            <p className="text-sm text-blue-800">
-              <strong>Swap Mode Active:</strong> Click on two meals to swap
-              their positions.
-              {selectedMealForSwap &&
-                " Click on another meal to complete the swap."}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {isSwapMode && <SwapModeCard selectedMealForSwap={selectedMealForSwap} />}
 
       {/* Meal Plan Grid */}
       <div className="space-y-4">
         {Object.entries(mealsByDate).map(([date, meals]) => (
-          <Card key={date}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                {format(parseISO(date), "EEEE, MMMM dd, yyyy")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {(["BREAKFAST", "LUNCH", "DINNER"] as MealType[]).map(
-                  (mealType) => {
-                    const meal = meals[mealType];
-                    const isSelected = selectedMealForSwap === meal?.id;
-
-                    return (
-                      <div
-                        key={mealType}
-                        className={`p-4 border rounded-lg transition-all ${
-                          meal
-                            ? `bg-white hover:shadow-md cursor-pointer ${
-                                isSelected
-                                  ? "ring-2 ring-blue-500 bg-blue-50"
-                                  : ""
-                              } ${isSwapMode ? "hover:bg-blue-50" : ""}`
-                            : "bg-gray-50 border-dashed"
-                        }`}
-                        onClick={() => meal && handleMealClick(meal.id)}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium capitalize">
-                            {mealType.toLowerCase()}
-                          </h4>
-                          {meal && !isSwapMode && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveMeal(meal.id);
-                              }}
-                              disabled={isLoading}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-
-                        {meal ? (
-                          <div>
-                            <p className="font-semibold text-sm">
-                              {meal.recipe?.name || "Recipe"}
-                            </p>
-                            {meal.recipe && (
-                              <div className="text-xs text-gray-500 mt-1 space-y-1">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {meal.recipe.cookingTime} min
-                                </div>
-                                <div>
-                                  ₱{meal.recipe.costPerServing.toFixed(2)} per
-                                  serving
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-gray-400 text-sm">
-                            No meal planned
-                          </p>
-                        )}
-                      </div>
-                    );
-                  }
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <MealDayCard
+            key={date}
+            date={date}
+            meals={meals}
+            selectedMealForSwap={selectedMealForSwap}
+            isSwapMode={isSwapMode}
+            isLoading={isLoading}
+            onMealClick={handleMealClick}
+            onRemoveMeal={handleRemoveMeal}
+            onAddMeal={handleAddMealFromSlot}
+          />
         ))}
       </div>
     </div>
