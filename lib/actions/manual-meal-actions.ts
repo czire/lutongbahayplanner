@@ -4,10 +4,9 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/prisma";
 import type { MealType } from "@prisma/client";
-import type { UserMealPlan, UserMeal } from "@/lib/types/user";
+import type { UserMealPlan } from "@/lib/types/user";
 import {
   addGuestMeal,
-  updateGuestMeal,
   deleteGuestMeal,
   getGuestSession,
 } from "@/lib/utils/guest-session";

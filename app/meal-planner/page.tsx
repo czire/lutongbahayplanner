@@ -13,7 +13,6 @@ const Page = () => {
     isGuest,
     user,
     isLoading,
-    savedMealPlans,
     generatedMealPlans,
     createMealPlan,
     canCreateMealPlan,
