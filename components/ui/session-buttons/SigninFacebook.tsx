@@ -6,7 +6,7 @@ import { Button } from "../button";
 const SignInFacebook = () => {
   return (
     <form
-      action={() => signIn("facebook", { redirectTo: "/example/meal-planner" })}
+      action={() => signIn("facebook", { redirectTo: "/meal-planner/plans" })}
     >
       <Button type="submit">Sign in with Facebook</Button>
     </form>
