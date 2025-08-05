@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,7 +16,7 @@ const errorMessages: Record<string, string> = {
   Default: "An authentication error occurred. Please try again.",
 };
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 
@@ -82,5 +83,28 @@ export default function AuthErrorPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md space-y-6">
+            <div className="flex justify-center">
+              <Logo />
+            </div>
+            <Card className="shadow-lg">
+              <CardContent className="p-6 text-center">
+                <div className="text-gray-600">Loading...</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      }
+    >
+      <AuthErrorContent />
+    </Suspense>
   );
 }
