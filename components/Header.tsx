@@ -18,6 +18,7 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface HeaderProps {
   leftNavigation?: NavigationItem[];
@@ -32,6 +33,7 @@ export default function Header({
   const { showDialog, ComingSoonDialog } = useComingSoonDialog();
   const { isGuest, user, isAuthenticated, isLoading } = useGuestOrUser();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const pathname = usePathname();
 
   const handleAuthClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,6 +43,23 @@ export default function Header({
 
   const handleNavItemClick = () => {
     setIsSheetOpen(false); // Close sheet when navigating
+  };
+
+  // Check if a navigation item is active
+  const isActiveNavItem = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    // For meal-planner, match exact path, meal plan details, and meal plan sub-routes (but not /plans)
+    if (href === "/meal-planner") {
+      return (
+        pathname === "/meal-planner" ||
+        (pathname.match(/^\/meal-planner\/[^\/]+/) &&
+          !pathname.startsWith("/meal-planner/plans"))
+      );
+    }
+    // For all other routes, check exact match or proper sub-routes
+    return pathname === href || pathname.startsWith(href + "/");
   };
 
   // Determine navigation based on user state
@@ -69,7 +88,11 @@ export default function Header({
                   <DebouncedLink
                     key={item.label}
                     href={item.href}
-                    className="text-sm text-primary-foreground hover:text-primary-foreground/80 transition-colors"
+                    className={`text-sm transition-colors ${
+                      isActiveNavItem(item.href)
+                        ? "text-primary-foreground font-medium border-b-2 border-primary-foreground/80 pb-1"
+                        : "text-primary-foreground/80 hover:text-primary-foreground"
+                    }`}
                     hoverStyle="navigation"
                   >
                     {item.label}
@@ -191,7 +214,11 @@ export default function Header({
                           <DebouncedLink
                             key={item.label}
                             href={item.href}
-                            className="block px-4 py-2 text-foreground hover:bg-accent rounded-md transition-colors"
+                            className={`block px-4 py-2 rounded-md transition-colors ${
+                              isActiveNavItem(item.href)
+                                ? "bg-primary text-primary-foreground font-medium"
+                                : "text-foreground hover:bg-accent"
+                            }`}
                             onClick={handleNavItemClick}
                           >
                             {item.label}

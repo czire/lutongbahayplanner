@@ -28,11 +28,6 @@ export const mainNavigation: NavigationItem[] = [
     href: "/meal-planner/plans",
     description: "View and manage your saved meal plans",
   },
-  {
-    label: "Grocery List",
-    href: "/grocery-list",
-    description: "Manage your grocery items and shopping lists",
-  },
 ];
 
 // Authentication navigation
