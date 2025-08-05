@@ -29,16 +29,18 @@ export const MealPlanTabs = ({
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="recipes" className="flex items-center gap-2">
-          <List size={16} />
-          Recipes & Shopping List
-        </TabsTrigger>
-        <TabsTrigger value="manage" className="flex items-center gap-2">
-          <Settings size={16} />
-          Manage Meals
-        </TabsTrigger>
-      </TabsList>
+      {!isGuest && (
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="recipes" className="flex items-center gap-2">
+            <List size={16} />
+            Recipes & Shopping List
+          </TabsTrigger>
+          <TabsTrigger value="manage" className="flex items-center gap-2">
+            <Settings size={16} />
+            Manage Meals
+          </TabsTrigger>
+        </TabsList>
+      )}
 
       <TabsContent value="recipes" className="space-y-8 mt-6">
         {filteredRecipes.length > 0 ? (
