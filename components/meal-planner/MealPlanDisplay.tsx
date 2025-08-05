@@ -256,12 +256,8 @@ export function MealPlanDisplay({
                     }
                     // Refresh meal plans to show updated saved plans and clear generated ones
                     await refreshMealPlans();
-                    console.log("Selected meals saved successfully!");
-                  } catch (error) {
-                    console.error("Failed to save selected meals:", error);
-                  }
+                  } catch (error) {}
                 } else {
-                  console.warn("No meals selected");
                 }
               }}
               disabled={selectedDays.length === 0}

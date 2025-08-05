@@ -36,10 +36,7 @@ export function SaveMealPlanButton({
 
       // Call the onSaved callback
       onSaved?.();
-
-      console.log("Meal plan saved successfully!");
     } catch (error) {
-      console.error("Failed to save meal plan:", error);
       // You could add toast notification here
     } finally {
       setIsLoading(false);

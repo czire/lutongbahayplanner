@@ -22,11 +22,9 @@ export default auth((req) => {
 
   // Block guests from accessing restricted paths
   if (!isLoggedIn && !isGuestPath) {
-    console.log("Blocking guest access to:", pathname);
     return NextResponse.redirect(new URL("/meal-planner", req.url));
   }
 
-  console.log("Middleware executed for:", pathname, "Logged in:", isLoggedIn);
   return NextResponse.next();
 });
 

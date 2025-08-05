@@ -30,12 +30,6 @@ export const generateGuestMealPlan = async (
     const { breakfastRecipe, lunchRecipe, dinnerRecipe } =
       selectRecipesWithinBudget(recipes, budget);
 
-    console.log("Selected Recipes:", {
-      breakfast: breakfastRecipe?.name,
-      lunch: lunchRecipe?.name,
-      dinner: dinnerRecipe?.name,
-    });
-
     // Generate meal plan
     const mealPlanId = `mealplan_${Date.now()}_guest`;
     const startDate = new Date();

@@ -15,13 +15,8 @@ export function saveGeneratedMealPlanToLocalStorage(
     if (typeof window !== "undefined") {
       const storageKey = `${MEAL_PLAN_STORAGE_KEY}-${mealPlan.userId}`;
       localStorage.setItem(storageKey, JSON.stringify(mealPlan));
-      console.log(
-        `Saved generated meal plan to localStorage for user ${mealPlan.userId}`
-      );
     }
-  } catch (error) {
-    console.error("Failed to save meal plan to localStorage:", error);
-  }
+  } catch (error) {}
 }
 
 /**
@@ -37,15 +32,10 @@ export function getGeneratedMealPlanFromLocalStorage(
 
       if (stored) {
         const mealPlan = JSON.parse(stored) as UserMealPlan;
-        console.log(
-          `Retrieved generated meal plan from localStorage for user ${userId}`
-        );
         return mealPlan;
       }
     }
-  } catch (error) {
-    console.error("Failed to retrieve meal plan from localStorage:", error);
-  }
+  } catch (error) {}
 
   return null;
 }
@@ -58,13 +48,8 @@ export function clearGeneratedMealPlanFromLocalStorage(userId: string): void {
     if (typeof window !== "undefined") {
       const storageKey = `${MEAL_PLAN_STORAGE_KEY}-${userId}`;
       localStorage.removeItem(storageKey);
-      console.log(
-        `Cleared generated meal plan from localStorage for user ${userId}`
-      );
     }
-  } catch (error) {
-    console.error("Failed to clear meal plan from localStorage:", error);
-  }
+  } catch (error) {}
 }
 
 /**
@@ -76,9 +61,7 @@ export function hasGeneratedMealPlanInLocalStorage(userId: string): boolean {
       const storageKey = `${MEAL_PLAN_STORAGE_KEY}-${userId}`;
       return localStorage.getItem(storageKey) !== null;
     }
-  } catch (error) {
-    console.error("Failed to check meal plan in localStorage:", error);
-  }
+  } catch (error) {}
 
   return false;
 }

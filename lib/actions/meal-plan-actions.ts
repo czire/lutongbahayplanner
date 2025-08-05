@@ -92,7 +92,6 @@ export async function addMealToMealPlan(
 
     return updatedMealPlan as UserMealPlan;
   } catch (error) {
-    console.error("Failed to add meal to meal plan:", error);
     throw new Error(
       `Failed to add meal: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -170,7 +169,6 @@ export async function removeMealFromMealPlan(
 
     return updatedMealPlan as UserMealPlan;
   } catch (error) {
-    console.error("Failed to remove meal from meal plan:", error);
     throw new Error(
       `Failed to remove meal: ${
         error instanceof Error ? error.message : "Unknown error"

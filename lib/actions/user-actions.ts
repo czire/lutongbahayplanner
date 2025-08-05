@@ -10,7 +10,7 @@ import type {
   CreateUserMealPlanData,
   CreateUserIngredientData,
   UserIngredient,
-} from "@/lib/types/user";
+} from "../types/user";
 import { clearGeneratedMealPlanFromLocalStorage } from "../utils/meal-plan-storage";
 
 /**
@@ -48,12 +48,6 @@ export async function createUserMealPlan(
       ) || 7;
     const dailyBudget = data.budget; // Input is already daily budget
     const totalBudget = dailyBudget * daysInPlan;
-
-    console.log(
-      `Generating ${daysInPlan}-day meal plan with daily budget: ₱${dailyBudget.toFixed(
-        2
-      )} (total: ₱${totalBudget.toFixed(2)})`
-    );
 
     // Generate meals for each day
     const mealsData = [];
@@ -115,13 +109,8 @@ export async function createUserMealPlan(
       createdAt: new Date(),
     };
 
-    console.log(
-      `Generated meal plan with ${mealsData.length} meals for user ${session.user.id} (not saved to DB)`
-    );
-
     return generatedMealPlan as UserMealPlan;
   } catch (error) {
-    console.error("Failed to generate user meal plan:", error);
     throw new Error(
       `Failed to generate meal plan: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -178,16 +167,11 @@ export async function addUserMealPlan(
       },
     });
 
-    console.log(
-      `Saved meal plan with ${savedMealPlan.meals.length} meals to database for user ${session.user.id}`
-    );
-
     clearGeneratedMealPlanFromLocalStorage(session.user.id);
 
     revalidatePath("/meal-planner");
     return savedMealPlan as UserMealPlan;
   } catch (error) {
-    console.error("Failed to save user meal plan:", error);
     throw new Error(
       `Failed to save meal plan: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -375,17 +359,12 @@ export async function saveSelectedDaysToUserMealPlan(
       },
     });
 
-    console.log(
-      `Saved selected meal plan with ${savedMealPlan.meals.length} meals to database for user ${session.user.id}`
-    );
-
     // Don't clear localStorage here - this is a server action
     // The client will handle clearing localStorage after successful save
 
     revalidatePath("/meal-planner");
     return savedMealPlan as UserMealPlan;
   } catch (error) {
-    console.error("Failed to save selected meals:", error);
     throw new Error(
       `Failed to save selected meals: ${
         error instanceof Error ? error.message : "Unknown error"

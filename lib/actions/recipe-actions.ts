@@ -88,13 +88,8 @@ export async function updateRecipeIngredients(
       })),
     };
 
-    console.log(
-      `Updated recipe ${recipeId} with ${newIngredients.count} ingredients`
-    );
-
     return guestRecipe;
   } catch (error) {
-    console.error("Failed to update recipe ingredients:", error);
     throw new Error(
       `Failed to update recipe ingredients: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -172,11 +167,8 @@ export async function deleteRecipeIngredient(
       })),
     };
 
-    console.log(`Deleted ingredient ${ingredientId} from recipe ${recipeId}`);
-
     return guestRecipe;
   } catch (error) {
-    console.error("Failed to delete recipe ingredient:", error);
     throw new Error(
       `Failed to delete ingredient: ${
         error instanceof Error ? error.message : "Unknown error"
@@ -264,11 +256,8 @@ export async function updateSingleRecipeIngredient(
       })),
     };
 
-    console.log(`Updated ingredient ${ingredientId} in recipe ${recipeId}`);
-
     return guestRecipe;
   } catch (error) {
-    console.error("Failed to update recipe ingredient:", error);
     throw new Error(
       `Failed to update ingredient: ${
         error instanceof Error ? error.message : "Unknown error"

@@ -218,7 +218,6 @@ export const selectRecipesWithinBudget = (
   });
 
   if (recipesWithinBudget.length === 0) {
-    console.log(`No recipes found within budget of ₱${budget.toFixed(2)}`);
     return {
       breakfastRecipe: undefined,
       lunchRecipe: undefined,
@@ -260,19 +259,6 @@ export const selectRecipesWithinBudget = (
       : recipesWithinBudget.length > 0
       ? recipesWithinBudget[0]
       : undefined;
-
-  console.log("Selected recipes within individual budget:", {
-    breakfast: `${breakfastRecipe?.name} - ₱${
-      breakfastRecipe ? breakfastRecipe.costPerServing.toFixed(2) : "0"
-    }`,
-    lunch: `${lunchRecipe?.name} - ₱${
-      lunchRecipe ? lunchRecipe.costPerServing.toFixed(2) : "0"
-    }`,
-    dinner: `${dinnerRecipe?.name} - ₱${
-      dinnerRecipe ? dinnerRecipe.costPerServing.toFixed(2) : "0"
-    }`,
-    budget: `₱${budget.toFixed(2)} per meal`,
-  });
 
   return {
     breakfastRecipe,

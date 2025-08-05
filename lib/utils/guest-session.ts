@@ -59,7 +59,6 @@ export const getGuestSession = (): GuestSessionData | null => {
     return parsed;
   } catch (error) {
     // If parsing fails, create a new session
-    console.error("Error parsing guest session:", error);
     return createGuestSession();
   }
 };

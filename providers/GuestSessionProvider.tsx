@@ -59,7 +59,6 @@ export function GuestSessionProvider({ children }: GuestSessionProviderProps) {
         const session = await getGuestSession();
         setGuestSession(session);
       } catch (error) {
-        console.error("Failed to load guest session:", error);
         setGuestSession(null);
       } finally {
         setIsLoading(false);
@@ -88,7 +87,6 @@ export function GuestSessionProvider({ children }: GuestSessionProviderProps) {
         setGuestSession(updatedSession);
       }
     } catch (error) {
-      console.error("Failed to update guest session:", error);
       throw error;
     }
   };
@@ -98,7 +96,6 @@ export function GuestSessionProvider({ children }: GuestSessionProviderProps) {
       await clearGuestSession();
       setGuestSession(null);
     } catch (error) {
-      console.error("Failed to clear guest session:", error);
       throw error;
     }
   };
@@ -110,7 +107,6 @@ export function GuestSessionProvider({ children }: GuestSessionProviderProps) {
       setGuestSession(session);
       return session;
     } catch (error) {
-      console.error("Failed to refresh guest session:", error);
       setGuestSession(null);
       return null;
     } finally {
@@ -260,8 +256,6 @@ export function useGuestGeneratedRecipes() {
           .filter((meal: any) => meal.recipe) // Filter meals that have recipe data
           .map((meal: any) => meal.recipe) // Get the recipe data
     ) || [];
-
-  console.log("Guest Generated Recipes:", recipes);
 
   return {
     generatedRecipes: recipes,

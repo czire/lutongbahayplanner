@@ -159,7 +159,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
           );
         }
       } catch (error) {
-        console.error("Failed to initialize guest session:", error);
       } finally {
         setIsGuestLoading(false);
       }
@@ -225,7 +224,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setGeneratedUserMealPlans([]);
       }
     } catch (error) {
-      console.error("Failed to fetch user meal plans:", error);
     } finally {
       setIsLoadingMealPlans(false);
     }
@@ -237,9 +235,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const ingredients = await getUserIngredients();
       setUserIngredients(ingredients);
-    } catch (error) {
-      console.error("Failed to fetch user ingredients:", error);
-    }
+    } catch (error) {}
   }, [isAuthenticated]);
 
   // Guest limitations (replacing useGuestLimitations)

@@ -28,8 +28,6 @@ export default {
   },
   // Allow account linking
   events: {
-    async linkAccount({ user, account, profile }) {
-      console.log(`Account ${account.provider} linked to user ${user.id}`);
-    },
+    async linkAccount({ user, account, profile }) {},
   },
 } satisfies NextAuthConfig;
