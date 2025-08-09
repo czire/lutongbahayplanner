@@ -20,14 +20,14 @@ export function MealPlanHeader({
   return (
     <div className="bg-white shadow-sm border-b">
       <div className="max-w-6xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between shrink flex-wrap">
           <DebouncedLink
             href={backHref}
             hoverStyle="brand"
             className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium transition-colors"
           >
             <MoveLeft size={20} />
-            {backText}
+            <p className="hidden sm:block">{backText}</p>
           </DebouncedLink>
 
           {actions.length > 0 && (
@@ -42,7 +42,7 @@ export function MealPlanHeader({
                   }
                 >
                   {action.icon}
-                  {action.text}
+                  <p className="hidden sm:block">{action.text}</p>
                 </DebouncedLink>
               ))}
             </div>

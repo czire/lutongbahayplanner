@@ -18,7 +18,7 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface HeaderProps {
   leftNavigation?: NavigationItem[];
@@ -34,11 +34,12 @@ export default function Header({
   const { isGuest, user, isAuthenticated, isLoading } = useGuestOrUser();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  const handleAuthClick = (e: React.MouseEvent) => {
+  const handleAuthClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
-    showDialog();
-    setIsSheetOpen(false); // Close sheet when auth dialog opens
+    router.push(href);
+    setIsSheetOpen(false);
   };
 
   const handleNavItemClick = () => {
@@ -138,7 +139,7 @@ export default function Header({
                       variant="outline"
                       size="sm"
                       className="text-primary border-primary-foreground/20 hover:bg-primary-foreground/10"
-                      onClick={handleAuthClick}
+                      onClick={(e) => handleAuthClick(e, item.href)}
                     >
                       {item.label}
                     </Button>
@@ -160,7 +161,7 @@ export default function Header({
                           ? "bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                           : "text-primary-foreground border-primary-foreground/20 hover:bg-primary-foreground/10"
                       }
-                      onClick={handleAuthClick}
+                      onClick={(e) => handleAuthClick(e, item.href)}
                     >
                       {item.label}
                     </Button>
@@ -267,7 +268,7 @@ export default function Header({
                                 key={item.label}
                                 variant="outline"
                                 className="w-full justify-start"
-                                onClick={handleAuthClick}
+                                onClick={(e) => handleAuthClick(e, item.href)}
                               >
                                 {item.label}
                               </Button>
@@ -286,7 +287,7 @@ export default function Header({
                                     : "outline"
                                 }
                                 className="w-full justify-start"
-                                onClick={handleAuthClick}
+                                onClick={(e) => handleAuthClick(e, item.href)}
                               >
                                 {item.label}
                               </Button>

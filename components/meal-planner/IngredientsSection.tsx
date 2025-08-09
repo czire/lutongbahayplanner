@@ -25,7 +25,7 @@ export const IngredientsSection = ({
 }: IngredientsSectionProps) => {
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap">
         <h3 className="text-xl font-semibold flex items-center gap-2">
           🥬 Ingredients ({recipe.ingredients?.length || 0})
         </h3>
@@ -58,7 +58,7 @@ export const IngredientsSection = ({
                 key={ingredient.id}
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className="font-semibold text-gray-900 text-lg">

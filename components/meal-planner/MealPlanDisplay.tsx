@@ -11,13 +11,11 @@ import { useGuestOrUser } from "@/lib/hooks/useGuestOrUser";
 import { useUser } from "@/lib/contexts/UserContext";
 import { Checkbox } from "../ui/checkbox";
 import { useState } from "react";
-import { UserMealPlan } from "@/lib/types/user";
 import { Button } from "../ui/button";
-import {
-  addUserMealPlan,
-  saveSelectedDaysToUserMealPlan,
-} from "@/lib/actions/user-actions";
+import { saveSelectedDaysToUserMealPlan } from "@/lib/actions/user-actions";
 import { clearGeneratedMealPlanFromLocalStorage } from "@/lib/utils/meal-plan-storage";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 // Unified meal plan type that works with both guest and user meal plans
 interface UnifiedMealPlan {
@@ -80,6 +78,8 @@ export function MealPlanDisplay({
   const [selectedDays, setSelectedDays] = useState<string[]>([]); // Store day identifiers instead
   const { isGuest, isAuthenticated } = useGuestOrUser();
   const { refreshMealPlans, user } = useUser();
+  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
 
   // Helper function to get all available day IDs
   const getAllDayIds = () => {
@@ -239,30 +239,50 @@ export function MealPlanDisplay({
 
             <Button
               className={`px-6 py-2 shadow-lg transform transition-all duration-200 hover:scale-[1.02] ${
-                selectedDays.length === 0
+                selectedDays.length === 0 || isSaving
                   ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                   : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
               }`}
               onClick={async () => {
+                if (isSaving) return;
                 const selectedMealsData = getSelectedMealsData();
                 if (selectedMealsData.length > 0) {
+                  setIsSaving(true);
                   try {
                     await saveSelectedDaysToUserMealPlan(selectedMealsData);
-                    // Clear selections after successful save
                     setSelectedDays([]);
-                    // Clear generated meal plan from localStorage on client side
                     if (user?.id) {
                       clearGeneratedMealPlanFromLocalStorage(user.id);
                     }
-                    // Refresh meal plans to show updated saved plans and clear generated ones
                     await refreshMealPlans();
-                  } catch (error) {}
-                } else {
+                    toast.success("Selected days added to your meal plans!", {
+                      description: (
+                        <p className="text-green-800">
+                          You can view them in your saved plans.
+                        </p>
+                      ),
+                      duration: 3000,
+                      style: {
+                        color: "green",
+                      },
+                    });
+                    router.push("/meal-planner/plans");
+                  } catch (error) {
+                    console.error("Failed to save selected days", error);
+                    toast.error(
+                      "Failed to save selected days. Please try again."
+                    );
+                  } finally {
+                    setIsSaving(false);
+                  }
                 }
               }}
-              disabled={selectedDays.length === 0}
+              disabled={selectedDays.length === 0 || isSaving}
+              aria-busy={isSaving}
             >
-              {selectedDays.length === 0
+              {isSaving
+                ? "Saving..."
+                : selectedDays.length === 0
                 ? "Add Selected to Plans"
                 : `Add ${selectedDays.length} Day${
                     selectedDays.length > 1 ? "s" : ""

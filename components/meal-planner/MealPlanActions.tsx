@@ -36,6 +36,8 @@ interface MealPlanActionsProps {
   onCancel: () => void;
   isSwapMode: boolean;
   onToggleSwapMode: () => void;
+  isMealPlanComplete?: boolean;
+  dateMealTypeAvailability?: Record<string, MealType[]>;
 }
 
 export const MealPlanActions = ({
@@ -54,6 +56,8 @@ export const MealPlanActions = ({
   onCancel,
   isSwapMode,
   onToggleSwapMode,
+  isMealPlanComplete = false,
+  dateMealTypeAvailability = {},
 }: MealPlanActionsProps) => {
   return (
     <div className="flex gap-4 flex-wrap">
@@ -71,11 +75,14 @@ export const MealPlanActions = ({
         isLoading={isLoading}
         onAddMeal={onAddMeal}
         onCancel={onCancel}
+        isMealPlanComplete={isMealPlanComplete}
+        dateMealTypeAvailability={dateMealTypeAvailability}
       />
 
       <Button
         variant={isSwapMode ? "destructive" : "outline"}
         onClick={onToggleSwapMode}
+        title={isMealPlanComplete ? "Meal plan is complete" : undefined}
       >
         <ArrowUpDown className="mr-2" size={16} />
         {isSwapMode ? "Cancel Swap" : "Swap Meals"}

@@ -10,7 +10,7 @@ interface RecipeHeaderProps {
 export const RecipeHeader = ({ recipe, recipeCost }: RecipeHeaderProps) => {
   return (
     <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6">
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start flex-wrap">
         <div className="flex-1">
           <h2 className="text-2xl font-bold mb-2">{recipe.name}</h2>
           <p className="text-orange-100 mb-3">{recipe.description}</p>

@@ -30,7 +30,7 @@ export const MealPlanTabs = ({
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       {!isGuest && (
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
           <TabsTrigger value="recipes" className="flex items-center gap-2">
             <List size={16} />
             Recipes & Shopping List

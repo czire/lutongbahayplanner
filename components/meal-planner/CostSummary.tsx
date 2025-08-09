@@ -78,33 +78,35 @@ export const CostSummary = ({
                 key={recipe.id}
                 className="flex justify-between items-center py-3 px-4 bg-white rounded-lg border border-gray-200"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 w-full">
                   <span className="text-sm font-medium text-gray-500 min-w-[80px]">
                     {mealType}
                   </span>
-                  <span className="font-medium text-gray-700">
-                    {recipe.name}
-                  </span>
-                  {isWithinBudget ? (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                      ✓ Within budget
+                  <div className="grid grid-cols-1 place-content-center sm:grid-cols-3 flex-1">
+                    <span className="font-medium text-gray-700 text-center sm:text-start">
+                      {recipe.name}
                     </span>
-                  ) : (
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-                      ⚠️ Over budget
-                    </span>
-                  )}
-                </div>
-                <div className="text-right">
-                  <span
-                    className={`font-semibold text-lg ${
-                      isWithinBudget ? "text-green-700" : "text-red-600"
-                    }`}
-                  >
-                    ₱{recipeCost.toFixed(2)}
-                  </span>
-                  <div className="text-xs text-gray-500">
-                    / ₱{budgetPerMeal.toFixed(2)}
+                    {isWithinBudget ? (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full text-center mx-auto items-center">
+                        ✓ Within budget
+                      </span>
+                    ) : (
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full text-center m-auto">
+                        ⚠️ Over budget
+                      </span>
+                    )}
+                    <div className="text-center sm:text-right">
+                      <span
+                        className={`font-semibold text-lg ${
+                          isWithinBudget ? "text-green-700" : "text-red-600"
+                        }`}
+                      >
+                        ₱{recipeCost.toFixed(2)}
+                      </span>
+                      <div className="text-xs text-gray-500">
+                        / ₱{budgetPerMeal.toFixed(2)}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

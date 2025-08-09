@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Calendar, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight, MoveRight } from "lucide-react";
 import { EmptyState } from "@/components/meal-planner/EmptyState";
 
 // Components
@@ -70,7 +70,7 @@ const MealPlanOverviewPage = () => {
           {
             href: `/meal-planner/${mealPlanId}`,
             text: "View Full Recipe Details",
-            icon: <ArrowRight size={16} />,
+            icon: <MoveRight size={16} />,
           },
         ]}
       />

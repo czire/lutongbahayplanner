@@ -34,12 +34,12 @@ export const mainNavigation: NavigationItem[] = [
 export const authNavigation: NavigationItem[] = [
   {
     label: "Login",
-    href: "/login",
+    href: "/auth/login", // updated path
     description: "Sign in to your account",
   },
   {
     label: "Sign Up",
-    href: "/signup",
+    href: "/auth/signup", // updated path
     description: "Create a new account",
   },
 ];

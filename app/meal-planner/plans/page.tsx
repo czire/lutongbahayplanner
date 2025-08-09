@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 const MyPlansPage = () => {
   const {
@@ -57,8 +58,14 @@ const MyPlansPage = () => {
     try {
       await deleteMealPlan(planId);
       await refreshMealPlans();
+      toast.success("Meal plan deleted successfully!", {
+        duration: 3000,
+      });
     } catch (error) {
       console.error("Failed to delete meal plan:", error);
+      toast.error("Failed to delete meal plan. Please try again.", {
+        duration: 3000,
+      });
     } finally {
       setDeletingPlanId(null);
     }

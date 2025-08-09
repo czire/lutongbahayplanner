@@ -13,15 +13,27 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
 
-  const guestAllowedPaths = ["/", "/meal-planner"];
+  // Public (guest) accessible paths
+  const publicPaths = [
+    "/",
+    "/meal-planner",
+    "/auth/login",
+    "/auth/signup",
+    "/auth/error",
+  ];
+
+  // Allow any nested auth routes (e.g., verification) to avoid redirect loops
+  if (pathname.startsWith("/auth/")) {
+    return NextResponse.next();
+  }
 
   // Check if it's a meal plan detail page (e.g., /meal-planner/abc123)
   const isMealPlanDetail = /^\/meal-planner\/[^\/]+$/.test(pathname);
 
-  const isGuestPath = guestAllowedPaths.includes(pathname) || isMealPlanDetail;
+  const isPublic = publicPaths.includes(pathname) || isMealPlanDetail;
 
-  // Block guests from accessing restricted paths
-  if (!isLoggedIn && !isGuestPath) {
+  // Block guests from accessing restricted paths (but let them reach sign in / auth pages)
+  if (!isLoggedIn && !isPublic) {
     return NextResponse.redirect(new URL("/meal-planner", req.url));
   }
 

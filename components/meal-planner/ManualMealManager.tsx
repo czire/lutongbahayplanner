@@ -16,6 +16,16 @@ import { AddMealDialog } from "./AddMealDialog";
 import { MealDayCard } from "./MealDayCard";
 import { SwapModeCard } from "./SwapModeCard";
 import { MealPlanActions } from "./MealPlanActions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "../ui/button";
+import { toast } from "sonner";
 
 interface ManualMealManagerProps {
   mealPlan: UserMealPlan | GuestMealPlan;
@@ -45,6 +55,10 @@ export const ManualMealManager = ({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>([]);
+  const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+  const [mealIdPendingRemoval, setMealIdPendingRemoval] = useState<
+    string | null
+  >(null);
 
   // Add meal form state
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>("");
@@ -144,9 +158,10 @@ export const ManualMealManager = ({
       setSelectedDate("");
       setSelectedMealType("");
       setIsAddDialogOpen(false);
+      toast.success("Meal added successfully!");
     } catch (error) {
       console.error("Failed to add meal:", error);
-      alert("Failed to add meal. Please try again.");
+      toast.error("Failed to add meal. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -160,25 +175,39 @@ export const ManualMealManager = ({
     setIsAddDialogOpen(false);
   };
 
-  // Handle removing a meal
-  const handleRemoveMeal = async (mealId: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to remove this meal?"
-    );
-    if (!confirmed) return;
+  // Handle removing a meal (open dialog)
+  const handleRemoveMeal = (mealId: string) => {
+    setMealIdPendingRemoval(mealId);
+    setIsRemoveDialogOpen(true);
+  };
 
+  // Confirm removal
+  const confirmRemoveMeal = async () => {
+    if (!mealIdPendingRemoval) return;
     setIsLoading(true);
     try {
-      const updatedMealPlan = await removeMeal(mealPlan.id, mealId, isGuest);
+      const updatedMealPlan = await removeMeal(
+        mealPlan.id,
+        mealIdPendingRemoval,
+        isGuest
+      );
       if (updatedMealPlan) {
         onMealPlanUpdate(updatedMealPlan);
+        toast.success("Meal removed successfully!");
       }
     } catch (error) {
       console.error("Failed to remove meal:", error);
-      alert("Failed to remove meal. Please try again.");
+      toast.error("Failed to remove meal. Please try again.");
     } finally {
       setIsLoading(false);
+      setMealIdPendingRemoval(null);
+      setIsRemoveDialogOpen(false);
     }
+  };
+
+  const cancelRemoveMeal = () => {
+    setMealIdPendingRemoval(null);
+    setIsRemoveDialogOpen(false);
   };
 
   // Handle meal swapping
@@ -203,6 +232,7 @@ export const ManualMealManager = ({
 
         if (updatedMealPlan) {
           onMealPlanUpdate(updatedMealPlan);
+          toast.success("Meals swapped successfully!");
         }
 
         // Reset swap mode
@@ -210,7 +240,7 @@ export const ManualMealManager = ({
         setSelectedMealForSwap(null);
       } catch (error) {
         console.error("Failed to swap meals:", error);
-        alert("Failed to swap meals. Please try again.");
+        toast.error("Failed to swap meals. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -219,6 +249,21 @@ export const ManualMealManager = ({
 
   const mealsByDate = getMealsByDate();
   const dateOptions = getDateOptions();
+
+  // Build availability of meal types per date (which meal types are still empty)
+  const dateMealTypeAvailability: Record<string, MealType[]> = {};
+  Object.entries(mealsByDate).forEach(([date, meals]) => {
+    const available: MealType[] = [];
+    (["BREAKFAST", "LUNCH", "DINNER"] as MealType[]).forEach((mt) => {
+      if (!meals[mt]) available.push(mt);
+    });
+    dateMealTypeAvailability[date] = available;
+  });
+
+  // Date options that still have at least one empty meal slot
+  const dateOptionsWithAvailability = dateOptions.filter(
+    (d) => dateMealTypeAvailability[d.value]?.length > 0
+  );
 
   // Calculate meal plan completion statistics
   const getMealPlanStats = () => {
@@ -249,6 +294,8 @@ export const ManualMealManager = ({
   };
 
   const stats = getMealPlanStats();
+  const isMealPlanCompleteFlag =
+    stats.currentMealCount >= stats.totalPossibleMeals;
 
   // Handle quick add from completion card
   const handleQuickAdd = (date: string, mealType: MealType) => {
@@ -296,12 +343,14 @@ export const ManualMealManager = ({
         selectedMealType={selectedMealType}
         setSelectedMealType={setSelectedMealType}
         availableRecipes={availableRecipes}
-        dateOptions={dateOptions}
+        dateOptions={dateOptionsWithAvailability}
         isLoading={isLoading}
         onAddMeal={handleAddMeal}
         onCancel={handleDialogClose}
         isSwapMode={isSwapMode}
         onToggleSwapMode={handleToggleSwapMode}
+        isMealPlanComplete={isMealPlanCompleteFlag}
+        dateMealTypeAvailability={dateMealTypeAvailability}
       />
 
       {/* Swap Mode Instructions */}
@@ -323,6 +372,34 @@ export const ManualMealManager = ({
           />
         ))}
       </div>
+
+      <Dialog open={isRemoveDialogOpen} onOpenChange={cancelRemoveMeal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Meal</DialogTitle>
+            <DialogDescription>
+              This action will permanently remove the selected meal from this
+              meal plan. Are you sure you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={cancelRemoveMeal}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmRemoveMeal}
+              disabled={isLoading}
+            >
+              {isLoading ? "Removing..." : "Remove Meal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
